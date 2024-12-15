@@ -1,6 +1,6 @@
 package main
 
-import "github.com/EgorjanPy/finalProject/internal/application"
+import "finalProject/internal/application"
 
 func main() {
 	app := application.New()

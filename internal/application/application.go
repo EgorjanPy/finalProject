@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/EgorjanPy/finalProject/pkg/calculation"
+	"finalProject/pkg/calculation"
 )
 
 type Application struct {
