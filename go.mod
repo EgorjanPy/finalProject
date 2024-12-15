@@ -1,3 +1,3 @@
-module github.com/EgorjanPy/finalProject
+module finalProject
 
 go 1.23.2
