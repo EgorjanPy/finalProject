@@ -1,7 +1,6 @@
 package calculation
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -30,7 +29,7 @@ func isSign(value rune) bool {
 
 func Calc(expression string) (float64, error) {
 	if len(expression) < 3 {
-		return 0, fmt.Errorf("???")
+		return 0, ErrEmptyExpression
 	}
 	//////////////////////////////////////////////////////////////////////////////////////////////////////
 	var res float64
@@ -47,7 +46,7 @@ func Calc(expression string) (float64, error) {
 	}
 	//////////////////////////////////////////////////////////////////////////////////////////////////////
 	if isSign(rune(expression[0])) || isSign(rune(expression[len(expression)-1])) {
-		return 0, fmt.Errorf("???")
+		return 0, ErrInvalidExpression
 	}
 	for i, value := range expression {
 		if value == '(' {
@@ -56,7 +55,7 @@ func Calc(expression string) (float64, error) {
 		if value == ')' {
 			calc, err := Calc(expression[isc+1 : i])
 			if err != nil {
-				return 0, fmt.Errorf("???")
+				return 0, ErrInvalidExpressionInParentheses
 			}
 			calcstr := strconv.FormatFloat(calc, 'f', 0, 64)
 			i2 := i
@@ -65,11 +64,15 @@ func Calc(expression string) (float64, error) {
 		}
 	}
 	if countc > 1 {
+
 		for i := 1; i < len(expression); i++ {
 			value := rune(expression[i])
 			///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			//Умножение и деление
 			if value == '*' || value == '/' {
+				if rune(expression[i+1]) == '0' && value == '/' {
+					return 0, ErrDivisionByZero
+				}
 				var imin int = i - 1
 				if imin != 0 {
 					for !isSign(rune(expression[imin])) && imin > 0 {
@@ -90,11 +93,15 @@ func Calc(expression string) (float64, error) {
 				}
 				calc, err := Calc(expression[imin:imax])
 				if err != nil {
-					return 0, fmt.Errorf("???")
+					if value == '*' {
+						return 0, ErrMultiplyError
+					} else {
+						return 0, ErrDivisionError
+					}
 				}
 				calcstr := strconv.FormatFloat(calc, 'f', 0, 64)
 				i -= len(expression[isc:i+1]) - len(calcstr) - 1
-				expression = strings.Replace(expression, expression[imin:imax], calcstr, 1) // Меняем скобки на результат выражения в них
+				expression = strings.Replace(expression, expression[imin:imax], calcstr, 1) // Меняем умнжение/деление на результат выражения
 			}
 			if value == '+' || value == '-' || value == '*' || value == '/' {
 				c = value
@@ -130,7 +137,7 @@ func Calc(expression string) (float64, error) {
 			/////////////////////////////////////////////////////////////////////////////////////////////
 		case value == 's':
 		default:
-			return 0, fmt.Errorf("Not correct input")
+			return 0, ErrInvalidExpression
 		}
 	}
 	return res, nil

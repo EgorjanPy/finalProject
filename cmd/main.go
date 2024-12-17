@@ -4,5 +4,6 @@ import "finalProject/internal/application"
 
 func main() {
 	app := application.New()
-	app.Run()
+	// app.Run()
+	app.RunServer()
 }
