@@ -71,56 +71,45 @@ type Request struct {
 	Expression string `json:"expression"`
 }
 
-func CalcLogger(next http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-		request := new(Request)
-		defer r.Body.Close()
-		err := json.NewDecoder(r.Body).Decode(&request)
-		if err != nil {
-			logger.Error("finished",
-				slog.Group("req",
-					slog.String("method", r.Method),
-					slog.String("url", r.URL.String()),
-					slog.String("msg", "can't decode request"),
-				),
-				slog.Int("status", http.StatusBadRequest),
-				slog.Duration("duration", time.Second))
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		logger.Info("finished",
-			slog.Group("req",
-				slog.String("method", r.Method),
-				slog.String("url", r.URL.String()),
-				slog.String("expression", request.Expression)),
-			slog.Int("status", http.StatusOK),
-			slog.Duration("duration", time.Second))
-		w.Header().Set("expression", request.Expression)
-		next.ServeHTTP(w, r)
-	})
-}
+//	func CalcLogger(next http.HandlerFunc) http.HandlerFunc {
+//		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//			logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+//			request := new(Request)
+//			defer r.Body.Close()
+//			err := json.NewDecoder(r.Body).Decode(&request)
+//			if err != nil {
+//				logger.Error("finished",
+//					slog.Group("req",
+//						slog.String("method", r.Method),
+//						slog.String("url", r.URL.String()),
+//						slog.String("msg", "can't decode request"),
+//					),
+//					slog.Int("status", http.StatusBadRequest),
+//					slog.Duration("duration", time.Second))
+//				http.Error(w, err.Error(), http.StatusBadRequest)
+//				return
+//			}
+//			logger.Info("finished",
+//				slog.Group("req",
+//					slog.String("method", r.Method),
+//					slog.String("url", r.URL.String()),
+//					slog.String("expression", request.Expression)),
+//				slog.Int("status", http.StatusOK),
+//				slog.Duration("duration", time.Second))
+//			w.Header().Set("expression", request.Expression)
+//			next.ServeHTTP(w, r)
+//		})
+//	}
 func CalcHandler(w http.ResponseWriter, r *http.Request) {
-	// request := new(Request)
-	// defer r.Body.Close()
-	// err := json.NewDecoder(r.Body).Decode(&request)
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusBadRequest)
-	// 	return
-	// }
 	expression := w.Header().Get("expression")
 	res, err := calculation.Calc(expression)
 	if err != nil {
-		// if errors.Is(err, calculation.ErrInvalidExpression) {
-		// 	fmt.Fprintf(w, "err: %s", err.Error())
-		// } else {
-		// 	fmt.Fprintf(w, "unknow error")
-
-		// }
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		fmt.Fprintf(w, "%v", err)
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	// log.Println(res)
+
 	fmt.Fprintf(w, "result: %f", res)
 }
 func (a *Application) RunServer() error {

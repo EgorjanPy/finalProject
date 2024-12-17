@@ -28,8 +28,11 @@ func isSign(value rune) bool {
 }
 
 func Calc(expression string) (float64, error) {
-	if len(expression) < 3 {
+	if len(expression) == 0 {
 		return 0, ErrEmptyExpression
+	}
+	if len(expression) < 3 {
+		return 0, ErrInvalidExpression
 	}
 	//////////////////////////////////////////////////////////////////////////////////////////////////////
 	var res float64
@@ -55,7 +58,7 @@ func Calc(expression string) (float64, error) {
 		if value == ')' {
 			calc, err := Calc(expression[isc+1 : i])
 			if err != nil {
-				return 0, ErrInvalidExpressionInParentheses
+				return 0, ErrInvalidExpression
 			}
 			calcstr := strconv.FormatFloat(calc, 'f', 0, 64)
 			i2 := i
