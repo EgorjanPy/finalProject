@@ -52,28 +52,37 @@ func TestCalc(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			name:       "simple",
-			expression: "1+1*",
+			name:        "simple",
+			expression:  "1+1*",
+			expectedErr: calculation.ErrInvalidExpression,
 		},
 		{
-			name:       "priority",
-			expression: "2+2*(2--++3)",
+			name:        "priority",
+			expression:  "2+2*(2--++3)",
+			expectedErr: calculation.ErrInvalidExpression,
 		},
 		{
-			name:       "priority",
-			expression: "((2+2-*(2",
+			name:        "priority",
+			expression:  "((2+2-*(2",
+			expectedErr: calculation.ErrInvalidExpression,
 		},
 		{
-			name:       "empty",
-			expression: "",
+			name:        "empty",
+			expression:  "",
+			expectedErr: calculation.ErrEmptyExpression,
+		},
+		{
+			name:        "zero",
+			expression:  "10/0",
+			expectedErr: calculation.ErrDivisionByZero,
 		},
 	}
 
 	for _, testCase := range testCasesFail {
 		t.Run(testCase.name, func(t *testing.T) {
-			val, err := calculation.Calc(testCase.expression)
-			if err == nil {
-				t.Fatalf("expression %s is invalid but result  %f was obtained", testCase.expression, val)
+			_, err := calculation.Calc(testCase.expression)
+			if err != testCase.expectedErr {
+				t.Fatalf("wrong error, expected %v, but got %v", testCase.expectedErr, err)
 			}
 		})
 	}

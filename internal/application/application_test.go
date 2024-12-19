@@ -19,11 +19,11 @@ type TestingRequest struct {
 
 func TestCalcHandlerSuccessCase(t *testing.T) {
 	requests := []TestingRequest{
-		TestingRequest{1, "2+2*2", fmt.Sprintf("result: %f", 6.), 200},
-		TestingRequest{2, "2+2", fmt.Sprintf("result: %f", 4.), 200},
-		TestingRequest{3, "2+2*(2/2)", fmt.Sprintf("result: %f", 4.), 200},
+		{1, "2+2*2", fmt.Sprintf("result: %f", 6.), 200},
+		{2, "2+2", fmt.Sprintf("result: %f", 4.), 200},
+		{3, "2+2*(2/2)", fmt.Sprintf("result: %f", 4.), 200},
 		// TestingRequest{"2+2/(2*10)", fmt.Sprintf("result: %f", 2.1),  200},
-		TestingRequest{4, "2+0", fmt.Sprintf("result: %f", 2.), 200},
+		{4, "2+0", fmt.Sprintf("result: %f", 2.), 200},
 	}
 	for _, r := range requests {
 		req := httptest.NewRequest(http.MethodGet, "/api/v1/calculate", nil)
@@ -45,13 +45,13 @@ func TestCalcHandlerSuccessCase(t *testing.T) {
 
 func TestCalcHandlerBadRequestCase(t *testing.T) {
 	requests := []TestingRequest{
-		TestingRequest{1, "2+2*(2", fmt.Sprintf("%v", calculation.ErrMultiplyError), 400},
-		TestingRequest{2, "2+2)", calculation.ErrInvalidExpression.Error(), 400},
+		{1, "2+2*(2", fmt.Sprintf("%v", calculation.ErrMultiplyError), 400},
+		{2, "2+2)", calculation.ErrInvalidExpression.Error(), 400},
 		// TestingRequest{3, "2+2*(2/0)", calculation.ErrDivisionByZero.Error(), 400},
-		TestingRequest{4, "", calculation.ErrEmptyExpression.Error(), 400},
-		TestingRequest{5, "*2+0", calculation.ErrInvalidExpression.Error(), 400},
-		TestingRequest{6, "2+0*", calculation.ErrInvalidExpression.Error(), 400},
-		TestingRequest{7, "2+(5*3-+)", calculation.ErrInvalidExpression.Error(), 400},
+		{4, "", calculation.ErrEmptyExpression.Error(), 400},
+		{5, "*2+0", calculation.ErrInvalidExpression.Error(), 400},
+		{6, "2+0*", calculation.ErrInvalidExpression.Error(), 400},
+		{7, "2+(5*3-+)", calculation.ErrInvalidExpression.Error(), 400},
 	}
 	for _, r := range requests {
 		req := httptest.NewRequest(http.MethodGet, "/api/v1/calculate", nil)

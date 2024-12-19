@@ -51,7 +51,14 @@ func Calc(expression string) (float64, error) {
 	if isSign(rune(expression[0])) || isSign(rune(expression[len(expression)-1])) {
 		return 0, ErrInvalidExpression
 	}
+
 	for i, value := range expression {
+		if i < len(expression)-1 {
+			if isSign(rune(expression[i])) && isSign(rune(expression[i+1])) {
+				return 0, ErrInvalidExpression
+			}
+		}
+
 		if value == '(' {
 			isc = i
 		}
@@ -96,11 +103,7 @@ func Calc(expression string) (float64, error) {
 				}
 				calc, err := Calc(expression[imin:imax])
 				if err != nil {
-					if value == '*' {
-						return 0, ErrMultiplyError
-					} else {
-						return 0, ErrDivisionError
-					}
+					return 0, ErrInvalidExpression
 				}
 				calcstr := strconv.FormatFloat(calc, 'f', 0, 64)
 				i -= len(expression[isc:i+1]) - len(calcstr) - 1
@@ -128,6 +131,9 @@ func Calc(expression string) (float64, error) {
 				case '*':
 					res *= stringToFloat64(b)
 				case '/':
+					if b == "0" {
+						return 0, ErrDivisionByZero
+					}
 					res /= stringToFloat64(b)
 				}
 			} else {
