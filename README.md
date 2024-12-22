@@ -15,11 +15,12 @@ To run, enter the command
 ```
 go run ./cmd/ -port=8080
 ```
-You can choose another port if you want.
+You can choose another port if you want(default 8080).
 Example curl request
 ```
-curl http://127.0.0.1:8080/api/v1/calculatу -X POST -H "Content-Type: application/json" -d 
-"{\"expression\":\"2+2*2\"}"
+curl http://127.0.0.1:8080/api/v1/calculatу
+   -X POST -H "Content-Type: application/json"
+   -d  "{\"expression\":\"2+2*2\"}"
 ```
 Example response
 ```
