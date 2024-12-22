@@ -1,6 +1,8 @@
 package main
 
-import "finalProject/internal/application"
+import (
+	"finalProject/internal/application"
+)
 
 func main() {
 	app := application.New()

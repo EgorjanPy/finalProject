@@ -34,25 +34,25 @@ func Calc(expression string) (float64, error) {
 	if len(expression) < 3 {
 		return 0, ErrInvalidExpression
 	}
-	//////////////////////////////////////////////////////////////////////////////////////////////////////
 	var res float64
 	var b string
 	var c rune = 0
 	var resflag bool = false
 	var isc int
 	var countc int = 0
-	//////////////////////////////////////////////////////////////////////////////////////////////////////
 	for _, value := range expression {
 		if isSign(value) {
 			countc++
 		}
 	}
-	//////////////////////////////////////////////////////////////////////////////////////////////////////
 	if isSign(rune(expression[0])) || isSign(rune(expression[len(expression)-1])) {
 		return 0, ErrInvalidExpression
 	}
 
 	for i, value := range expression {
+		if i != 0 && value == '0' && expression[i-1] == '/' {
+			return 0, ErrDivisionByZero
+		}
 		if i < len(expression)-1 {
 			if isSign(rune(expression[i])) && isSign(rune(expression[i+1])) {
 				return 0, ErrInvalidExpression
@@ -77,12 +77,7 @@ func Calc(expression string) (float64, error) {
 
 		for i := 1; i < len(expression); i++ {
 			value := rune(expression[i])
-			///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			//Умножение и деление
 			if value == '*' || value == '/' {
-				if rune(expression[i+1]) == '0' && value == '/' {
-					return 0, ErrDivisionByZero
-				}
 				var imin int = i - 1
 				if imin != 0 {
 					for !isSign(rune(expression[imin])) && imin > 0 {
@@ -114,14 +109,13 @@ func Calc(expression string) (float64, error) {
 			}
 		}
 	}
-	//////////////////////////////////////////////////////////////////////////////////////////////////////
 	for _, value := range expression + "s" {
 		switch {
 		case value == ' ':
 			continue
-		case value > 47 && value < 58: // Если это цифра
+		case value > 47 && value < 58:
 			b += string(value)
-		case isSign(value) || value == 's': // Если это знак
+		case isSign(value) || value == 's':
 			if resflag {
 				switch c {
 				case '+':
@@ -143,7 +137,6 @@ func Calc(expression string) (float64, error) {
 			b = strings.ReplaceAll(b, b, "")
 			c = value
 
-			/////////////////////////////////////////////////////////////////////////////////////////////
 		case value == 's':
 		default:
 			return 0, ErrInvalidExpression

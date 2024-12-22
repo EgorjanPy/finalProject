@@ -14,8 +14,8 @@ func TestCalc(t *testing.T) {
 	}{
 		{
 			name:           "simple",
-			expression:     "1+1",
-			expectedResult: 2,
+			expression:     "2+2*7",
+			expectedResult: 16,
 		},
 		{
 			name:           "priority",

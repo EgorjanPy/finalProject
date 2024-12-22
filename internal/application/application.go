@@ -3,6 +3,7 @@ package application
 import (
 	"bufio"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"log/slog"
@@ -20,11 +21,15 @@ type Config struct {
 
 func ConfigFromEnv() *Config {
 	config := new(Config)
-	config.Port = os.Getenv("PORT")
-	if config.Port == "" {
-		config.Port = "8080"
-	}
+	// config.Port = os.Getenv("PORT")
+	port := flag.String("port", "8080", "Сетевой порт HTTP")
+	flag.Parse()
+	config.Port = *port
+	// if config.Port == "" {
+	// 	config.Port = "8080"
+	// }
 	return config
+
 }
 
 type Application struct {
@@ -82,11 +87,12 @@ func CalcLogger(next http.HandlerFunc) http.HandlerFunc {
 				slog.Group("req",
 					slog.String("method", r.Method),
 					slog.String("url", r.URL.String()),
-					slog.String("msg", "can't decode request"),
+					slog.String("expression", request.Expression),
 				),
-				slog.Int("status", http.StatusBadRequest),
+				slog.Int("status", 500),
 				slog.Duration("duration", time.Second))
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			w.WriteHeader(500)
+			fmt.Fprintf(w, "Internal server error")
 			return
 		}
 		logger.Info("finished",
@@ -101,20 +107,24 @@ func CalcLogger(next http.HandlerFunc) http.HandlerFunc {
 	})
 }
 func CalcHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		w.WriteHeader(405)
+		fmt.Fprintf(w, "Method Not Allowed")
+		return
+	}
 	expression := w.Header().Get("expression")
 	res, err := calculation.Calc(expression)
 	if err != nil {
-		w.WriteHeader(400)
+		w.WriteHeader(422)
 		fmt.Fprintf(w, "%v", err)
 		return
 	}
-	// log.Println(res)
-
 	fmt.Fprintf(w, "result: %f", res)
 }
 func (a *Application) RunServer() error {
+	flag.Parse()
+
 	http.HandleFunc("/api/v1/calculate", CalcLogger(CalcHandler))
 	// fmt.Printf("The server has started! Go to https://127.0.0.1:%s to view", a.config.Port)
 	return http.ListenAndServe(":"+a.config.Port, nil)
-
 }
