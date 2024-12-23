@@ -57,7 +57,7 @@ cd ./finalProject/
 go run ./cmd/ -port=8080
 ```
 Вы можете выбрать другой порт запуска если хотите(по умолчанию 8080)
-* Пример curl запроса
+* Пример curl запроса через cmd
 ```
 curl http://127.0.0.1:8080/api/v1/calculate -X POST -H "Content-Type: application/json" -d  "{\"expression\":\"2+2*2\"}"
 ```
