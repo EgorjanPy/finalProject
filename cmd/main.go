@@ -1,11 +1,13 @@
 package main
 
 import (
-	"finalProject/internal/application"
+	"finalProject/internal/config"
+	"finalProject/internal/orchestrator/server"
 )
 
 func main() {
-	app := application.New()
+	cfg := config.MustLoad()
+	app := server.New(cfg.Port)
 	// app.Run()
 	app.RunServer()
 }
