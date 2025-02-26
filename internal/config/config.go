@@ -1,7 +1,7 @@
 package config
 
 import (
-	"flag"
+	"fmt"
 	"os"
 	"time"
 
@@ -18,16 +18,18 @@ type Config struct {
 }
 
 func MustLoad() *Config {
-	config_path := flag.String("CONFIG_PATH", "./config/config.yaml", "")
-	flag.Parse()
-	if *config_path == "" {
-		// log.Fatalf("Config path is empty")
+	os.Setenv("CONFIG_PATH", "./config/config.yaml")
+	config_path := os.Getenv("CONFIG_PATH")
+	fmt.Printf("PATH=%s", config_path)
+	fmt.Println()
+	if config_path == "" {
+		config_path = "finalProject/config/config.yaml"
 	}
-	if _, err := os.Stat(*config_path); os.IsNotExist(err) {
+	if _, err := os.Stat(config_path); os.IsNotExist(err) {
 		// log.Fatalf("Config path is incorrect: %s", *config_path)
 	}
 	var cfg Config
-	err := cleanenv.ReadConfig(*config_path, &cfg)
+	err := cleanenv.ReadConfig(config_path, &cfg)
 	if err != nil {
 		// log.Fatal("Cant read config file")
 	}
