@@ -20,7 +20,7 @@ type Config struct {
 func MustLoad() *Config {
 	os.Setenv("CONFIG_PATH", "./config/config.yaml")
 	config_path := os.Getenv("CONFIG_PATH")
-	fmt.Printf("PATH=%s", config_path)
+	// fmt.Printf("PATH=%s", config_path)
 	fmt.Println()
 	if config_path == "" {
 		config_path = "finalProject/config/config.yaml"

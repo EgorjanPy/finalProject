@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"time"
 	"unicode"
 )
 
@@ -18,7 +19,6 @@ type Task struct {
 	Arg1      float64
 	Arg2      float64
 	Operation string
-	res       float64
 }
 
 var Expressions = []Expression{}
@@ -28,9 +28,27 @@ type SaveTasks struct {
 	mu    sync.Mutex
 	Tasks map[int]Task
 }
+
+func (st *SaveTasks) AddTask(id int, task Task) {
+	st.mu.Lock()
+	st.Tasks[id] = task
+	st.mu.Unlock()
+}
+
 type SaveResults struct {
 	mu      sync.RWMutex
 	Results map[int]float64
+}
+
+func (sr *SaveResults) SetResult(id int, result float64) {
+	sr.mu.Lock()
+	defer sr.mu.Unlock()
+	sr.Results[id] = result
+}
+func (sr *SaveResults) GetResult(id int) float64 {
+	sr.mu.RLock()
+	defer sr.mu.RUnlock()
+	return sr.Results[id]
 }
 
 var Results = SaveResults{
@@ -46,7 +64,7 @@ func NewEx(expression string) int {
 	id := len(Expressions)
 	Ex := Expression{Id: id, Expression: expression, Status: "processing"}
 	Expressions = append(Expressions, Ex)
-	ParseAndEvaluate(Ex)
+	go ParseAndEvaluate(Ex)
 	return id
 }
 func ParseAndEvaluate(expression Expression) (float64, error) {
@@ -79,45 +97,66 @@ type BinaryOp struct {
 func (b *BinaryOp) Evaluate() float64 {
 	switch b.Op {
 	case "+":
+		var res float64
 		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "+"}
-		Tasks.mu.Lock()
 		id := len(Tasks.Tasks)
-		Tasks.Tasks[id] = newTask
+		Tasks.AddTask(id, newTask)
 		fmt.Println(Tasks.Tasks)
-		Tasks.mu.Unlock()
-		Results.mu.RLock()
-		res := Results.Results[id]
-		Results.mu.RUnlock()
+		for {
+			if value, exists := Results.Results[id]; exists {
+				res = value
+				fmt.Printf("res = %f", res)
+				break
+			} else {
+				time.Sleep(1 * time.Second)
+				continue
+			}
+		}
 		return res
 	case "-":
+		var res float64
 		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "-"}
-		Tasks.mu.Lock()
 		id := len(Tasks.Tasks)
-		Tasks.Tasks[id] = newTask
-		Tasks.mu.Unlock()
-		Results.mu.RLock()
-		res := Results.Results[id]
-		Results.mu.RUnlock()
+		Tasks.AddTask(id, newTask)
+		fmt.Println(Tasks.Tasks)
+		for {
+			if value, exists := Results.Results[id]; exists {
+				res = value
+				break
+			} else {
+				continue
+			}
+		}
 		return res
 	case "*":
+		var res float64
 		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "*"}
-		Tasks.mu.Lock()
 		id := len(Tasks.Tasks)
-		Tasks.Tasks[id] = newTask
-		Tasks.mu.Unlock()
-		Results.mu.RLock()
-		res := Results.Results[id]
-		Results.mu.RUnlock()
+		Tasks.AddTask(id, newTask)
+		fmt.Println(Tasks.Tasks)
+		for {
+			if value, exists := Results.Results[id]; exists {
+				res = value
+				break
+			} else {
+				continue
+			}
+		}
 		return res
 	case "/":
+		var res float64
 		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "/"}
-		Tasks.mu.Lock()
 		id := len(Tasks.Tasks)
-		Tasks.Tasks[id] = newTask
-		Tasks.mu.Unlock()
-		Results.mu.RLock()
-		res := Results.Results[id]
-		Results.mu.RUnlock()
+		Tasks.AddTask(id, newTask)
+		fmt.Println(Tasks.Tasks)
+		for {
+			if value, exists := Results.Results[id]; exists {
+				res = value
+				break
+			} else {
+				continue
+			}
+		}
 		return res
 	}
 	return 0

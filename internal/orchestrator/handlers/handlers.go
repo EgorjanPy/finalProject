@@ -91,23 +91,43 @@ func GetExpressionHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonBytes)
 }
 
-type GetTaskResponse struct {
+type GetSetTaskResponse struct {
 	Id             int           `json:"id"`
 	Arg1           float64       `json:"arg1"`
 	Arg2           float64       `json:"arg2"`
 	Operation      string        `json:"operation"`
 	Operation_time time.Duration `json:"operation_time"`
 }
+type GetSetTaskRequest struct {
+	Id     int     `json:"id"`
+	Result float64 `json:"result"`
+}
 
-func GetTask(w http.ResponseWriter, r *http.Request) {
-	i := len(logic.Results.Results)
-	if len(logic.Results.Results) == i {
-		// w.WriteHeader(404)
-		fmt.Println("All complited")
+func GetSetTask(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			log.Fatal("cant read body :(")
+			w.WriteHeader(422)
+			return
+		}
+		defer r.Body.Close()
+		var request GetSetTaskRequest
+		err = json.Unmarshal(body, &request)
+		if err != nil {
+			log.Fatal("cant unmarsahl body :(")
+			w.WriteHeader(422)
+			return
+		}
+		logic.Results.SetResult(request.Id, request.Result)
+		fmt.Println(logic.Results.Results)
 		return
-	} else {
+	}
+	if r.Method == http.MethodGet {
+		i := len(logic.Results.Results)
+
 		task := logic.Tasks.Tasks[i]
-		response := GetTaskResponse{Id: task.Id, Arg1: task.Arg1, Arg2: task.Arg2, Operation: task.Operation}
+		response := GetSetTaskResponse{Id: task.Id, Arg1: task.Arg1, Arg2: task.Arg2, Operation: task.Operation}
 		switch task.Operation {
 		case "+":
 			response.Operation_time = cfg.TimeAddMs
@@ -126,4 +146,5 @@ func GetTask(w http.ResponseWriter, r *http.Request) {
 		w.Write(jsonRes)
 		return
 	}
+
 }
