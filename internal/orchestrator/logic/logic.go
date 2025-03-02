@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
-	"time"
 	"unicode"
 )
 
@@ -14,19 +13,23 @@ type Expression struct {
 	Status     string
 	Result     float64
 }
+
+var Expressions = []Expression{}
+
 type Task struct {
 	Id        int
 	Arg1      float64
 	Arg2      float64
 	Operation string
 }
-
-var Expressions = []Expression{}
-
-// var Tasks = map[int]Task{}
 type SaveTasks struct {
 	mu    sync.Mutex
 	Tasks map[int]Task
+}
+
+var Tasks = SaveTasks{
+	mu:    sync.Mutex{},
+	Tasks: map[int]Task{},
 }
 
 func (st *SaveTasks) AddTask(id int, task Task) {
@@ -36,28 +39,25 @@ func (st *SaveTasks) AddTask(id int, task Task) {
 }
 
 type SaveResults struct {
-	mu      sync.RWMutex
+	mu      sync.Mutex
 	Results map[int]float64
 }
 
 func (sr *SaveResults) SetResult(id int, result float64) {
 	sr.mu.Lock()
-	defer sr.mu.Unlock()
+
 	sr.Results[id] = result
+	sr.mu.Unlock()
 }
 func (sr *SaveResults) GetResult(id int) float64 {
-	sr.mu.RLock()
-	defer sr.mu.RUnlock()
+	sr.mu.Lock()
+	defer sr.mu.Unlock()
 	return sr.Results[id]
 }
 
 var Results = SaveResults{
-	mu:      sync.RWMutex{},
+	mu:      sync.Mutex{},
 	Results: map[int]float64{},
-}
-var Tasks = SaveTasks{
-	mu:    sync.Mutex{},
-	Tasks: map[int]Task{},
 }
 
 func NewEx(expression string) int {
@@ -98,7 +98,7 @@ func (b *BinaryOp) Evaluate() float64 {
 	switch b.Op {
 	case "+":
 		var res float64
-		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "+"}
+		newTask := Task{Id: len(Tasks.Tasks), Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "+"}
 		id := len(Tasks.Tasks)
 		Tasks.AddTask(id, newTask)
 		fmt.Println(Tasks.Tasks)
@@ -108,14 +108,14 @@ func (b *BinaryOp) Evaluate() float64 {
 				fmt.Printf("res = %f", res)
 				break
 			} else {
-				time.Sleep(1 * time.Second)
+				// time.Sleep(1 * time.Second)
 				continue
 			}
 		}
 		return res
 	case "-":
 		var res float64
-		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "-"}
+		newTask := Task{Id: len(Tasks.Tasks), Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "-"}
 		id := len(Tasks.Tasks)
 		Tasks.AddTask(id, newTask)
 		fmt.Println(Tasks.Tasks)
@@ -130,7 +130,7 @@ func (b *BinaryOp) Evaluate() float64 {
 		return res
 	case "*":
 		var res float64
-		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "*"}
+		newTask := Task{Id: len(Tasks.Tasks), Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "*"}
 		id := len(Tasks.Tasks)
 		Tasks.AddTask(id, newTask)
 		fmt.Println(Tasks.Tasks)
@@ -145,7 +145,7 @@ func (b *BinaryOp) Evaluate() float64 {
 		return res
 	case "/":
 		var res float64
-		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "/"}
+		newTask := Task{Id: len(Tasks.Tasks), Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "/"}
 		id := len(Tasks.Tasks)
 		Tasks.AddTask(id, newTask)
 		fmt.Println(Tasks.Tasks)

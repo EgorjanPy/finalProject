@@ -27,5 +27,6 @@ func (a *Application) RunServer() error {
 	// r.HandleFunc("/internal/task", handlers.SetTaskResult) // POST Для приёма результата таски
 	http.Handle("/", r)
 	fmt.Printf("Сервер удачно запущен на http://localhost%s", a.port)
+	fmt.Println()
 	return http.ListenAndServe(a.port, nil)
 }

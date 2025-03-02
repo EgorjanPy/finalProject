@@ -45,7 +45,7 @@ func CalculateHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(422)
 		return
 	}
-	fmt.Println("Ok 1")
+	// fmt.Println("Ok 1")
 	defer r.Body.Close()
 	var request CalculateRequest
 	err = json.Unmarshal(body, &request)
@@ -54,7 +54,7 @@ func CalculateHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(422)
 		return
 	}
-	fmt.Println("Ok 2")
+	// fmt.Println("Ok 2")
 	id := logic.NewEx(request.Expression)
 	response := CalculateResponse{Id: id}
 	jsonBytes, err := json.Marshal(response)
@@ -63,10 +63,10 @@ func CalculateHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		return
 	}
-	fmt.Println("Ok 3")
+	// fmt.Println("Ok 3")
 
 	w.Write(jsonBytes)
-	log.Printf("%d", id)
+	// log.Printf("%d", id)
 }
 
 type GetExpressionResponse struct {
@@ -121,6 +121,7 @@ func GetSetTask(w http.ResponseWriter, r *http.Request) {
 		}
 		logic.Results.SetResult(request.Id, request.Result)
 		fmt.Println(logic.Results.Results)
+		fmt.Println(logic.Tasks.Tasks)
 		return
 	}
 	if r.Method == http.MethodGet {
