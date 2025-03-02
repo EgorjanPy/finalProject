@@ -119,14 +119,13 @@ func GetSetTask(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(422)
 			return
 		}
+		fmt.Println(request.Id)
 		logic.Results.SetResult(request.Id, request.Result)
 		fmt.Println(logic.Results.Results)
-		fmt.Println(logic.Tasks.Tasks)
 		return
 	}
 	if r.Method == http.MethodGet {
-		i := len(logic.Results.Results)
-
+		i := logic.Results.GetLen()
 		task := logic.Tasks.Tasks[i]
 		response := GetSetTaskResponse{Id: task.Id, Arg1: task.Arg1, Arg2: task.Arg2, Operation: task.Operation}
 		switch task.Operation {

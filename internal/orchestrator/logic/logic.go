@@ -7,6 +7,7 @@ import (
 	"unicode"
 )
 
+// Expression представляет математическое выражение
 type Expression struct {
 	Id         int
 	Expression string
@@ -16,12 +17,15 @@ type Expression struct {
 
 var Expressions = []Expression{}
 
+// Task представляет задачу для выполнения операции
 type Task struct {
 	Id        int
 	Arg1      float64
 	Arg2      float64
 	Operation string
 }
+
+// SaveTasks хранит задачи
 type SaveTasks struct {
 	mu    sync.Mutex
 	Tasks map[int]Task
@@ -32,27 +36,45 @@ var Tasks = SaveTasks{
 	Tasks: map[int]Task{},
 }
 
+// AddTask добавляет задачу в хранилище
 func (st *SaveTasks) AddTask(id int, task Task) {
 	st.mu.Lock()
 	st.Tasks[id] = task
 	st.mu.Unlock()
 }
+func (st *SaveTasks) GetLen() int {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	return len(st.Tasks)
+}
 
+// SaveResults хранит результаты вычислений
 type SaveResults struct {
 	mu      sync.Mutex
 	Results map[int]float64
 }
 
+// SetResult устанавливает результат для задачи
 func (sr *SaveResults) SetResult(id int, result float64) {
 	sr.mu.Lock()
-
 	sr.Results[id] = result
 	sr.mu.Unlock()
 }
-func (sr *SaveResults) GetResult(id int) float64 {
+func (sr *SaveResults) GetLen() int {
 	sr.mu.Lock()
 	defer sr.mu.Unlock()
-	return sr.Results[id]
+	return len(sr.Results)
+}
+
+// GetResultById получает результат по ID
+func (sr *SaveResults) GetResultById(id int) (float64, bool) {
+	sr.mu.Lock()
+	defer sr.mu.Unlock()
+	if value, exists := Results.Results[id]; exists {
+		return value, true
+	} else {
+		return 0, false
+	}
 }
 
 var Results = SaveResults{
@@ -60,6 +82,7 @@ var Results = SaveResults{
 	Results: map[int]float64{},
 }
 
+// NewEx создает новое выражение и запускает его обработку
 func NewEx(expression string) int {
 	id := len(Expressions)
 	Ex := Expression{Id: id, Expression: expression, Status: "processing"}
@@ -67,10 +90,16 @@ func NewEx(expression string) int {
 	go ParseAndEvaluate(Ex)
 	return id
 }
+
+// ParseAndEvaluate парсит и вычисляет выражение
 func ParseAndEvaluate(expression Expression) (float64, error) {
 	parser := NewParser(expression.Expression)
 	ast := parser.parseExpression()
-	return ast.Evaluate(), nil
+	result := ast.Evaluate()
+	Results.SetResult(expression.Id, result)
+	// expression.Result = result
+	// expression.Status = "Complited"
+	return result, nil
 }
 
 // Интерфейс для всех узлов AST
@@ -98,29 +127,27 @@ func (b *BinaryOp) Evaluate() float64 {
 	switch b.Op {
 	case "+":
 		var res float64
-		newTask := Task{Id: len(Tasks.Tasks), Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "+"}
-		id := len(Tasks.Tasks)
+		id := Tasks.GetLen()
+		newTask := Task{Id: id, Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "+"}
 		Tasks.AddTask(id, newTask)
 		fmt.Println(Tasks.Tasks)
 		for {
-			if value, exists := Results.Results[id]; exists {
+			if value, exists := Results.GetResultById(id); exists {
 				res = value
-				fmt.Printf("res = %f", res)
 				break
 			} else {
-				// time.Sleep(1 * time.Second)
 				continue
 			}
 		}
 		return res
 	case "-":
 		var res float64
-		newTask := Task{Id: len(Tasks.Tasks), Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "-"}
-		id := len(Tasks.Tasks)
+		id := Tasks.GetLen()
+		newTask := Task{Id: id, Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "-"}
 		Tasks.AddTask(id, newTask)
 		fmt.Println(Tasks.Tasks)
 		for {
-			if value, exists := Results.Results[id]; exists {
+			if value, exists := Results.GetResultById(id); exists {
 				res = value
 				break
 			} else {
@@ -130,12 +157,12 @@ func (b *BinaryOp) Evaluate() float64 {
 		return res
 	case "*":
 		var res float64
-		newTask := Task{Id: len(Tasks.Tasks), Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "*"}
-		id := len(Tasks.Tasks)
+		id := Tasks.GetLen()
+		newTask := Task{Id: id, Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "*"}
 		Tasks.AddTask(id, newTask)
 		fmt.Println(Tasks.Tasks)
 		for {
-			if value, exists := Results.Results[id]; exists {
+			if value, exists := Results.GetResultById(id); exists {
 				res = value
 				break
 			} else {
@@ -145,12 +172,12 @@ func (b *BinaryOp) Evaluate() float64 {
 		return res
 	case "/":
 		var res float64
-		newTask := Task{Id: len(Tasks.Tasks), Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "/"}
-		id := len(Tasks.Tasks)
+		id := Tasks.GetLen()
+		newTask := Task{Id: id, Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "/"}
 		Tasks.AddTask(id, newTask)
 		fmt.Println(Tasks.Tasks)
 		for {
-			if value, exists := Results.Results[id]; exists {
+			if value, exists := Results.GetResultById(id); exists {
 				res = value
 				break
 			} else {
@@ -162,6 +189,7 @@ func (b *BinaryOp) Evaluate() float64 {
 	return 0
 }
 
+// Parser для математических выражений
 type Parser struct {
 	input string
 	pos   int
@@ -213,5 +241,13 @@ func (p *Parser) parseTerm() Expr {
 }
 
 func (p *Parser) parseFactor() Expr {
+	if p.pos < len(p.input) && p.input[p.pos] == '(' {
+		p.pos++ // Пропускаем открывающую скобку
+		expr := p.parseExpression()
+		if p.pos < len(p.input) && p.input[p.pos] == ')' {
+			p.pos++ // Пропускаем закрывающую скобку
+		}
+		return expr
+	}
 	return p.parseNumber()
 }
