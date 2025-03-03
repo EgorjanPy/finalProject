@@ -21,7 +21,7 @@ type ExpressionsResponse struct {
 }
 
 func ExpressionsHandler(w http.ResponseWriter, r *http.Request) {
-	response := ExpressionsResponse{Expressions: logic.Expressions}
+	response := ExpressionsResponse{Expressions: logic.Expressions.Expressions}
 	jsonBytes, err := json.Marshal(response)
 	if err != nil {
 		log.Fatal("cant marsahl response :(")
@@ -81,7 +81,7 @@ func GetExpressionHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		return
 	}
-	response := GetExpressionResponse{logic.Expressions[id]}
+	response := GetExpressionResponse{logic.Expressions.GetExpressionById(id)}
 	jsonBytes, err := json.Marshal(response)
 	if err != nil {
 		log.Fatal("cant marsahl response :(")
@@ -125,9 +125,9 @@ func GetSetTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.Method == http.MethodGet {
-		i := logic.Results.GetLen()
-		task := logic.Tasks.Tasks[i]
-		response := GetSetTaskResponse{Id: task.Id, Arg1: task.Arg1, Arg2: task.Arg2, Operation: task.Operation}
+		id := logic.Results.GetLen()
+		task := logic.Tasks.GetTaskById(id)
+		response := GetSetTaskResponse{Id: id, Arg1: task.Arg1, Arg2: task.Arg2, Operation: task.Operation}
 		switch task.Operation {
 		case "+":
 			response.Operation_time = cfg.TimeAddMs
@@ -148,3 +148,4 @@ func GetSetTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
+
