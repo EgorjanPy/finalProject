@@ -25,9 +25,15 @@ var Expressions = SaveExpressions{
 	Expressions: []Expression{},
 }
 
+func (se *SaveExpressions) GetExpressions() []Expression {
+	se.mu.Lock()
+	defer se.mu.Unlock()
+	return se.Expressions
+}
 func (se *SaveExpressions) SetResult(id int, res float64) {
 	se.mu.Lock()
 	se.Expressions[id].Result = res
+	se.Expressions[id].Status = "complited"
 	se.mu.Unlock()
 }
 func (se *SaveExpressions) AddExpression(ex Expression) {
@@ -35,10 +41,15 @@ func (se *SaveExpressions) AddExpression(ex Expression) {
 	se.Expressions = append(se.Expressions, ex)
 	se.mu.Unlock()
 }
-func (se *SaveExpressions) GetExpressionById(id int) Expression {
+func (se *SaveExpressions) GetExpressionById(id int) (Expression, error) {
 	se.mu.Lock()
 	defer se.mu.Unlock()
-	return se.Expressions[id]
+	for _, ex := range se.Expressions {
+		if ex.Id == id {
+			return ex, nil
+		}
+	}
+	return Expression{}, fmt.Errorf("not found")
 }
 
 type Task struct {
@@ -62,10 +73,16 @@ func (st *SaveTasks) AddTask(id int, task Task) {
 	st.Tasks[id] = task
 	st.mu.Unlock()
 }
-func (st *SaveTasks) GetTaskById(id int) Task {
-	st.mu.Lock()
-	defer st.mu.Unlock()
-	return st.Tasks[id]
+func (st *SaveTasks) GetTaskById(id int) (Task, error) {
+	if st.GetLen() > Results.GetLen() {
+		st.mu.Lock()
+		defer st.mu.Unlock()
+		if t, exists := st.Tasks[id]; exists {
+			return t, nil
+		}
+		return Task{}, fmt.Errorf("not found")
+	}
+	return Task{}, fmt.Errorf("not found")
 }
 
 type SaveResults struct {
@@ -74,15 +91,21 @@ type SaveResults struct {
 }
 
 func (sr *SaveResults) IsExists(id int) bool {
-	if _, exists := Results.Results[id]; exists {
+	sr.mu.Lock()
+	defer sr.mu.Unlock()
+	if _, exists := sr.Results[id]; exists {
 		return true
 	}
 	return false
 }
 func (sr *SaveResults) SetResult(id int, result float64) {
-	sr.mu.Lock()
-	defer sr.mu.Unlock()
-	sr.Results[id] = result
+	if Tasks.GetLen() > sr.GetLen() {
+		sr.mu.Lock()
+		defer sr.mu.Unlock()
+		sr.Results[id] = result
+		return
+	}
+
 }
 func (sr *SaveResults) GetResult(id int) float64 {
 	sr.mu.RLock()
@@ -273,6 +296,14 @@ func (p *Parser) parseTerm() Expr {
 }
 
 func (p *Parser) parseFactor() Expr {
+	if p.pos < len(p.input) && p.input[p.pos] == '(' {
+		p.pos++ // Пропускаем открывающую скобку
+		expr := p.parseExpression()
+		if p.pos < len(p.input) && p.input[p.pos] == ')' {
+			p.pos++ // Пропускаем закрывающую скобку
+		}
+		return expr
+	}
 	return p.parseNumber()
 }
 

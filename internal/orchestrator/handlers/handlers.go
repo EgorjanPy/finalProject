@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"finalProject/internal/config"
 	"finalProject/internal/orchestrator/logic"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -21,7 +20,7 @@ type ExpressionsResponse struct {
 }
 
 func ExpressionsHandler(w http.ResponseWriter, r *http.Request) {
-	response := ExpressionsResponse{Expressions: logic.Expressions.Expressions}
+	response := ExpressionsResponse{Expressions: logic.Expressions.GetExpressions()}
 	jsonBytes, err := json.Marshal(response)
 	if err != nil {
 		log.Fatal("cant marsahl response :(")
@@ -42,19 +41,17 @@ func CalculateHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Fatal("cant read body :(")
-		w.WriteHeader(422)
+		w.WriteHeader(500)
 		return
 	}
-	// fmt.Println("Ok 1")
 	defer r.Body.Close()
 	var request CalculateRequest
 	err = json.Unmarshal(body, &request)
 	if err != nil {
 		log.Fatal("cant unmarsahl body :(")
-		w.WriteHeader(422)
+		w.WriteHeader(500)
 		return
 	}
-	// fmt.Println("Ok 2")
 	id := logic.NewEx(request.Expression)
 	response := CalculateResponse{Id: id}
 	jsonBytes, err := json.Marshal(response)
@@ -63,17 +60,15 @@ func CalculateHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		return
 	}
-	// fmt.Println("Ok 3")
-
+	w.WriteHeader(201)
 	w.Write(jsonBytes)
-	// log.Printf("%d", id)
 }
 
 type GetExpressionResponse struct {
 	Expression logic.Expression
 }
 
-func GetExpressionHandler(w http.ResponseWriter, r *http.Request) {
+func GetExpressionByIdHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	strId := vars["id"]
 	id, err := strconv.Atoi(strId)
@@ -81,7 +76,11 @@ func GetExpressionHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		return
 	}
-	response := GetExpressionResponse{logic.Expressions.GetExpressionById(id)}
+	ex, err := logic.Expressions.GetExpressionById(id)
+	if err != nil {
+		w.WriteHeader(404)
+	}
+	response := GetExpressionResponse{ex}
 	jsonBytes, err := json.Marshal(response)
 	if err != nil {
 		log.Fatal("cant marsahl response :(")
@@ -108,7 +107,7 @@ func GetSetTask(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			log.Fatal("cant read body :(")
-			w.WriteHeader(422)
+			w.WriteHeader(500)
 			return
 		}
 		defer r.Body.Close()
@@ -116,17 +115,19 @@ func GetSetTask(w http.ResponseWriter, r *http.Request) {
 		err = json.Unmarshal(body, &request)
 		if err != nil {
 			log.Fatal("cant unmarsahl body :(")
-			w.WriteHeader(422)
+			w.WriteHeader(500)
 			return
 		}
-		fmt.Println(request.Id)
 		logic.Results.SetResult(request.Id, request.Result)
-		fmt.Println(logic.Results.Results)
 		return
 	}
 	if r.Method == http.MethodGet {
 		id := logic.Results.GetLen()
-		task := logic.Tasks.GetTaskById(id)
+		task, err := logic.Tasks.GetTaskById(id)
+		if err != nil {
+			w.WriteHeader(404)
+			return
+		}
 		response := GetSetTaskResponse{Id: id, Arg1: task.Arg1, Arg2: task.Arg2, Operation: task.Operation}
 		switch task.Operation {
 		case "+":
@@ -146,6 +147,4 @@ func GetSetTask(w http.ResponseWriter, r *http.Request) {
 		w.Write(jsonRes)
 		return
 	}
-
 }
-

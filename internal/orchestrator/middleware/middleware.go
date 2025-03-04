@@ -33,14 +33,14 @@ func CalculateValidation(next http.HandlerFunc) http.HandlerFunc {
 		}
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			// TODO
+			w.WriteHeader(500)
 		}
 		defer r.Body.Close()
 
 		var request Request
 		err = json.Unmarshal(body, &request)
 		if err != nil || request.Expression == "" {
-			w.WriteHeader(422)
+			w.WriteHeader(500)
 			return
 		}
 		if !Validate(request.Expression) {
