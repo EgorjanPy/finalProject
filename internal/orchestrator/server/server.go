@@ -23,7 +23,7 @@ func (a *Application) RunServer() error {
 	r.HandleFunc("/api/v1/calculate", middleware.LoggerMiddleware(handlers.CalculateHandler))
 	r.HandleFunc("/api/v1/expressions", middleware.LoggerMiddleware(handlers.ExpressionsHandler))
 	r.HandleFunc("/api/v1/expressions/{id}", middleware.LoggerMiddleware(handlers.GetExpressionByIdHandler))
-	r.HandleFunc("/internal/task", middleware.LoggerMiddleware(handlers.GetSetTask)) // GET Для получения тасков
+	r.HandleFunc("/internal/task", handlers.GetSetTask) // GET Для получения тасков
 	http.Handle("/", r)
 	fmt.Printf("Сервер удачно запущен на http://localhost%s", a.port)
 	fmt.Println()

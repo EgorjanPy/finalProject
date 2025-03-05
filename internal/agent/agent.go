@@ -78,6 +78,7 @@ func (a *Application) StartAgent() {
 			return
 		}
 		defer response2.Body.Close()
+		time.Sleep(time.Second * 1) // Правила пишутся кровью. Это нужно чтобы оркестратор не ложился тк получается что агент его дудосит
 	}
 }
 func (a *Application) StartApp() {

@@ -3,6 +3,7 @@ package logic
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 	"unicode"
@@ -129,7 +130,7 @@ var Tasks = SaveTasks{
 
 func NewEx(expression string) int {
 	id := len(Expressions.Expressions)
-	Ex := Expression{Id: id, Expression: expression, Status: "processing"}
+	Ex := Expression{Id: id, Expression: strings.ReplaceAll(expression, " ", ""), Status: "processing"}
 	Expressions.AddExpression(Ex)
 	go func(id int) {
 		res, _ := ParseAndEvaluate(Ex)
