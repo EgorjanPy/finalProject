@@ -7,8 +7,11 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
+	"unicode"
 
 	"github.com/gorilla/mux"
 )
@@ -19,6 +22,9 @@ type ExpressionsResponse struct {
 	Expressions []logic.Expression
 }
 
+func isSign(value rune) bool {
+	return value == '+' || value == '-' || value == '*' || value == '/'
+}
 func ExpressionsHandler(w http.ResponseWriter, r *http.Request) {
 	response := ExpressionsResponse{Expressions: logic.Expressions.GetExpressions()}
 	jsonBytes, err := json.Marshal(response)
@@ -37,6 +43,50 @@ type CalculateResponse struct {
 	Id int `json:"id"`
 }
 
+func isValidExpression(expression string) bool {
+	cleanedExpression := removeSpaces(expression)
+	validPattern := `^[0-9+\-*/()]+$`
+	matched, err := regexp.MatchString(validPattern, cleanedExpression)
+	if err != nil || !matched {
+		return false
+	}
+	if !areParenthesesBalanced(cleanedExpression) {
+		return false
+	}
+	if strings.Contains("+=-/*:", string(expression[0])) || strings.Contains("+=-/*:", string(expression[len(expression)-1])) {
+		return false
+	}
+	for i := 1; i < len(expression)-1; i++ {
+		if isSign(rune(expression[i-1])) && isSign(rune(expression[i])) {
+			return false
+		}
+	}
+	return true
+}
+func removeSpaces(s string) string {
+	var result []rune
+	for _, r := range s {
+		if !unicode.IsSpace(r) {
+			result = append(result, r)
+		}
+	}
+	return string(result)
+}
+
+func areParenthesesBalanced(expression string) bool {
+	var stack []rune
+	for _, char := range expression {
+		if char == '(' {
+			stack = append(stack, char)
+		} else if char == ')' {
+			if len(stack) == 0 {
+				return false
+			}
+			stack = stack[:len(stack)-1]
+		}
+	}
+	return len(stack) == 0
+}
 func CalculateHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -49,6 +99,10 @@ func CalculateHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal("cant unmarsahl body :(")
 		w.WriteHeader(500)
+	}
+	if !isValidExpression(request.Expression) {
+		w.WriteHeader(422)
+		return
 	}
 	id := logic.NewEx(request.Expression)
 	response := CalculateResponse{Id: id}
@@ -99,6 +153,16 @@ type GetSetTaskRequest struct {
 	Result float64 `json:"result"`
 }
 
+func isValidResult(result string) bool {
+	cleanedExpression := removeSpaces(result)
+	validPattern := `[0-9]`
+	matched, err := regexp.MatchString(validPattern, cleanedExpression)
+	if err != nil || !matched {
+		return false
+	}
+	return true
+
+}
 func GetSetTask(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		body, err := io.ReadAll(r.Body)
@@ -115,6 +179,7 @@ func GetSetTask(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(500)
 			return
 		}
+
 		if logic.Tasks.GetLen() <= request.Id {
 			w.WriteHeader(404)
 			return
