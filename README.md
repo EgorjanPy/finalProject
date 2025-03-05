@@ -146,11 +146,11 @@ go mod tidy
 ## Запуск
 Чтобы запустить оркестратор, введите команду в терминал
 ```
-go run .\cmd\orchestrator\main.go
+go run ./cmd/orchestrator/main.go
 ```
 Чтобы запустить агент, введите команду в терминал
 ```
-go run .\cmd\agent\main.go
+go run ./cmd/agent/main.go
 ```
 Вы можете выбрать другой порт запуска через конфиг если хотите(по умолчанию 8080) 
 
