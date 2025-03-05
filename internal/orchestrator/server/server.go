@@ -2,6 +2,7 @@ package server
 
 import (
 	"finalProject/internal/orchestrator/handlers"
+	"finalProject/internal/orchestrator/middleware"
 	"fmt"
 	"net/http"
 
@@ -18,10 +19,11 @@ func New(port string) *Application {
 
 func (a *Application) RunServer() error {
 	r := mux.NewRouter()
-	r.HandleFunc("/api/v1/calculate", (handlers.CalculateHandler))
-	r.HandleFunc("/api/v1/expressions", handlers.ExpressionsHandler)
-	r.HandleFunc("/api/v1/expressions/{id}", handlers.GetExpressionByIdHandler)
-	r.HandleFunc("/internal/task", handlers.GetSetTask) // GET Для получения тасков
+
+	r.HandleFunc("/api/v1/calculate", middleware.LoggerMiddleware(handlers.CalculateHandler))
+	r.HandleFunc("/api/v1/expressions", middleware.LoggerMiddleware(handlers.ExpressionsHandler))
+	r.HandleFunc("/api/v1/expressions/{id}", middleware.LoggerMiddleware(handlers.GetExpressionByIdHandler))
+	r.HandleFunc("/internal/task", middleware.LoggerMiddleware(handlers.GetSetTask)) // GET Для получения тасков
 	http.Handle("/", r)
 	fmt.Printf("Сервер удачно запущен на http://localhost%s", a.port)
 	fmt.Println()

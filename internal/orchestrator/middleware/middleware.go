@@ -2,9 +2,13 @@ package middleware
 
 import (
 	"encoding/json"
+	"finalProject/internal/orchestrator/handlers"
+	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type Request struct {
@@ -26,57 +30,29 @@ func Validate(expression string) bool {
 
 func CalculateValidation(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			// http.Error(w, `{"error":"Wrong Method"}`, http.StatusMethodNotAllowed)
-			// return
-			// TODO
-		}
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			w.WriteHeader(500)
 		}
 		defer r.Body.Close()
 
-		var request Request
+		var request handlers.CalculateRequest
 		err = json.Unmarshal(body, &request)
 		if err != nil || request.Expression == "" {
 			w.WriteHeader(500)
-			return
 		}
 		if !Validate(request.Expression) {
 			w.WriteHeader(422)
-			return
 		}
+		fmt.Println("Всё гуд")
 		next.ServeHTTP(w, r)
 	})
 }
-func CalcLogger(next http.HandlerFunc) http.HandlerFunc {
+func LoggerMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-		// request := new(Request)
-		// defer r.Body.Close()
-		// err := json.NewDecoder(r.Body).Decode(&request)
-		// if err != nil {
-		// 	logger.Error("finished",
-		// 		slog.Group("req",
-		// 			slog.String("method", r.Method),
-		// 			slog.String("url", r.URL.String()),
-		// 			slog.String("expression", request.Expression),
-		// 		),
-		// 		slog.Int("status", 500),
-		// 		slog.Duration("duration", time.Second))
-		// 	w.WriteHeader(500)
-		// 	fmt.Fprintf(w, "Internal server error")
-		// 	return
-		// }
-		// logger.Info("finished",
-		// 	slog.Group("req",
-		// 		slog.String("method", r.Method),
-		// 		slog.String("url", r.URL.String()),
-		// 		slog.String("expression", request.Expression)),
-		// 	slog.Int("status", http.StatusOK),
-		// 	slog.Duration("duration", time.Second))
-		// w.Header().Set("expression", request.Expression)
-		// next.ServeHTTP(w, r)
+		start := time.Now()
+		log.Printf("Started %s %s", r.Method, r.URL.Path)
+		log.Printf("Completed %s in %v", r.URL.Path, time.Since(start))
+		next.ServeHTTP(w, r)
 	})
 }

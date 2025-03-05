@@ -42,7 +42,6 @@ func CalculateHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal("cant read body :(")
 		w.WriteHeader(500)
-		return
 	}
 	defer r.Body.Close()
 	var request CalculateRequest
@@ -50,7 +49,6 @@ func CalculateHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal("cant unmarsahl body :(")
 		w.WriteHeader(500)
-		return
 	}
 	id := logic.NewEx(request.Expression)
 	response := CalculateResponse{Id: id}
@@ -58,7 +56,6 @@ func CalculateHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal("cant marsahl response :(")
 		w.WriteHeader(500)
-		return
 	}
 	w.WriteHeader(201)
 	w.Write(jsonBytes)
@@ -116,6 +113,10 @@ func GetSetTask(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Fatal("cant unmarsahl body :(")
 			w.WriteHeader(500)
+			return
+		}
+		if logic.Tasks.GetLen() <= request.Id {
+			w.WriteHeader(404)
 			return
 		}
 		logic.Results.SetResult(request.Id, request.Result)

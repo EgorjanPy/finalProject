@@ -7,8 +7,18 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 )
+
+type Application struct {
+	Port           string
+	ComputingPower int
+}
+
+func New(port string, computing_power int) *Application {
+	return &Application{Port: port, ComputingPower: computing_power}
+}
 
 type Request struct {
 	Id     int
@@ -22,9 +32,10 @@ type Response struct {
 	Operation_time time.Duration `json:"operation_time"`
 }
 
-func StartAgent() {
+func (a *Application) StartAgent() {
+
 	for {
-		url := "http://localhost:8080/internal/task"
+		url := fmt.Sprintf("http://localhost%s/internal/task", a.Port)
 		resp, err := http.Get(url)
 		if err != nil {
 			log.Fatalln(err)
@@ -68,4 +79,12 @@ func StartAgent() {
 		}
 		defer response2.Body.Close()
 	}
+}
+func (a *Application) StartApp() {
+	wg := &sync.WaitGroup{}
+	wg.Add(a.ComputingPower)
+	for _ = range a.ComputingPower {
+		go a.StartAgent()
+	}
+	wg.Wait()
 }
