@@ -60,6 +60,7 @@ curl --location 'localhost/api/v1/expressions'
 }
 ```
 3. Получение выражения по ID
+
 Запрос:
 ```
 curl --location 'localhost/api/v1/expressions/1'
