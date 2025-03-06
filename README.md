@@ -5,6 +5,16 @@
 P.S: для связи со мной, тг <a>https://t.me/bomboklyat</a>, если нашли ошибку или есть фитбек то пишите :)
 
 ## Архитектура
+flowchart LR
+
+A[Client] -->|request /api/v1/calculate| B(Orchestrator)
+A[Client] -->|request /api/v1/expressions| B(Orchestrator)
+A[Client] -->|request /api/v1/expressions/id| B(Orchestrator)
+
+flowchart RL
+D(Agent) --> |GET /internal/task| B(Orchestrator)
+D(Agent) --> |POST /internal/task| B(Orchestrator)
+
 Проект состоит из двух основных компонентов:
 1. Оркестратор:
     - Сервер, который принимает арифметические выражения, разбивает их на задачи и управляет их выполнением.
