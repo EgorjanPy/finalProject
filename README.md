@@ -5,7 +5,7 @@
 P.S: для связи со мной, тг <a>https://t.me/bomboklyat</a>, если нашли ошибку или есть фитбек то пишите :)
 
 ## Архитектура
-![Иллюстрация к проекту](https://github.com/EgorjanPy/finalProject/raw/master/Screenshot_1.png)
+![Иллюстрация к проекту](https://github.com/EgorjanPy/finalProject/blob/main/Screenshot_1.png)
 
 
 Проект состоит из двух основных компонентов:
