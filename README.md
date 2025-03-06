@@ -5,13 +5,8 @@
 P.S: для связи со мной, тг <a>https://t.me/bomboklyat</a>, если нашли ошибку или есть фитбек то пишите :)
 
 ## Архитектура
-flowchart LR
+![Иллюстрация к проекту](https://github.com/EgorjanPy/finalProject/raw/master/Screenshot_1.png)
 
-A[Client] -->|/api/v1/calculate| B(Orchestrator)
-A[Client] -->|/api/v1/expressions| B(Orchestrator)
-
-D(Agent) <--> |GET /internal/task| B(Orchestrator)
-D(Agent) <--> |POST /internal/task| B(Orchestrator)
 
 Проект состоит из двух основных компонентов:
 1. Оркестратор:
