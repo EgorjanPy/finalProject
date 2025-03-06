@@ -7,13 +7,11 @@ P.S: для связи со мной, тг <a>https://t.me/bomboklyat</a>, ес�
 ## Архитектура
 flowchart LR
 
-A[Client] -->|request /api/v1/calculate| B(Orchestrator)
-A[Client] -->|request /api/v1/expressions| B(Orchestrator)
-A[Client] -->|request /api/v1/expressions/id| B(Orchestrator)
+A[Client] -->|/api/v1/calculate| B(Orchestrator)
+A[Client] -->|/api/v1/expressions| B(Orchestrator)
 
-flowchart RL
-D(Agent) --> |GET /internal/task| B(Orchestrator)
-D(Agent) --> |POST /internal/task| B(Orchestrator)
+D(Agent) <--> |GET /internal/task| B(Orchestrator)
+D(Agent) <--> |POST /internal/task| B(Orchestrator)
 
 Проект состоит из двух основных компонентов:
 1. Оркестратор:
