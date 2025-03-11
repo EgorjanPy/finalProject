@@ -20,7 +20,7 @@ P.S: для связи со мной, тг <a>https://t.me/bomboklyat</a>, ес�
 Запрос:
 - ручка `localhost/api/v1/calculate`
 ```
-    curl --location 'localhost/api/v1/calculate' \
+    curl --location 'localhost:8080/api/v1/calculate' \
     --header 'Content-Type: application/json' \
     --data '{
     "expression": "2 + 2 * 2"
@@ -38,7 +38,7 @@ P.S: для связи со мной, тг <a>https://t.me/bomboklyat</a>, ес�
 
 Запрос:
 ```
-curl --location 'localhost/api/v1/expressions'
+curl --location 'localhost:8080/api/v1/expressions'
 ```
 Ответ:
 - Код ответа: `200` (успешно), `500` (ошибка сервера).
@@ -63,7 +63,7 @@ curl --location 'localhost/api/v1/expressions'
 
 Запрос:
 ```
-curl --location 'localhost/api/v1/expressions/1'
+curl --location 'localhost:8080/api/v1/expressions/1'
 ```
 Ответ:
 - Код ответа: `200` (успешно), `404` (выражение не найдено), `500` (ошибка сервера).
@@ -81,7 +81,7 @@ curl --location 'localhost/api/v1/expressions/1'
 
 Запрос:
 ```
-curl --location 'localhost/internal/task'
+curl --location 'localhost:8080/internal/task'
 ```
 Ответ:
 - Код ответа: `200` (успешно), `404` (нет задач), `500` (ошибка сервера).
@@ -101,7 +101,7 @@ curl --location 'localhost/internal/task'
 
 Запрос:
 ```
-curl --location 'localhost/internal/task' \
+curl --location 'localhost:8080/internal/task' \
 --header 'Content-Type: application/json' \
 --data '{
   "id": 1,

@@ -57,6 +57,9 @@ func isValidExpression(expression string) bool {
 		return false
 	}
 	for i := 1; i < len(expression)-1; i++ {
+		if rune(expression[i-1]) == '/' && rune(expression[i-1]) == '0' {
+			return false
+		}
 		if isSign(rune(expression[i-1])) && isSign(rune(expression[i])) {
 			return false
 		}
