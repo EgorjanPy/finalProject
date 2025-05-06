@@ -217,3 +217,62 @@ func GetSetTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+type RegisterRequest struct {
+	Login    string
+	Password string
+}
+
+func RegisterHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			log.Fatal("cant read body :(")
+			w.WriteHeader(500)
+			return
+		}
+		defer r.Body.Close()
+		var request RegisterRequest
+		err = json.Unmarshal(body, &request)
+		if err != nil {
+			log.Fatal("cant unmarsahl body :(")
+			w.WriteHeader(500)
+			return
+		}
+		login := request.Login
+		password := request.Password
+		// Проверка на занятность логина
+		// Добавление в БД
+	}
+}
+func LoginHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			log.Fatal("cant read body :(")
+			w.WriteHeader(500)
+			return
+		}
+		defer r.Body.Close()
+		var request RegisterRequest
+		err = json.Unmarshal(body, &request)
+		if err != nil {
+			log.Fatal("cant unmarsahl body :(")
+			w.WriteHeader(500)
+			return
+		}
+		login := request.Login
+		password := request.Password
+		// Проверка пароля по логину в БД
+		// Если всё гуд то генерируем токен
+		t, rt := logic.GengerateJWT(login)
+		r.AddCookie(&http.Cookie{
+			Name:  "token",
+			Value: t,
+		})
+		r.AddCookie(
+			&http.Cookie{
+				Name:  "refresh_token",
+				Value: rt,
+			})
+}

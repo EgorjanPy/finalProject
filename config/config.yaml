@@ -4,3 +4,4 @@ TIME_MULTIPLICATIONS_MS: 1000ms
 TIME_DIVISIONS_MS: 1000ms
 COMPUTING_POWER: 4
 PORT: ":8080"
+storage_path: "./storage/storage.db"
