@@ -25,3 +25,9 @@ func New(storagePath string) (*Storage, error) {
 	}
 	return &Storage{db}, nil
 }
+
+// Insert user
+// Get
+// Insert expression
+// Get expressions
+// Все функции из logic ?!

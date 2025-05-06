@@ -409,3 +409,29 @@ func GengerateJWT(user_name string) (string, string) {
 	// return  c.JSON(LoginResponse{AccessToken: refresh_tokenString})
 	return tokenString, refresh_tokenString
 }
+
+/*
+-- Таблица пользователей
+CREATE TABLE IF NOT EXISTS user (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    login TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    expression TEXT
+);
+
+-- Таблица выражений с статусом вычисления
+CREATE TABLE IF NOT EXISTS expression (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    expression TEXT NOT NULL,
+    answer TEXT,
+    userid INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'calculating', 'completed', 'failed')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (userid) REFERENCES user(id) ON DELETE CASCADE
+);
+
+-- Индексы для ускорения запросов
+CREATE INDEX IF NOT EXISTS idx_expression_userid ON expression(userid);
+CREATE INDEX IF NOT EXISTS idx_expression_status ON expression(status);
+*/
