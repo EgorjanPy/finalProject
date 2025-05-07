@@ -33,6 +33,7 @@ func (se *SaveExpressions) GetExpressions() []Expression {
 	defer se.mu.Unlock()
 	return se.Expressions
 }
+
 func (se *SaveExpressions) SetResult(id int, res float64) {
 	se.mu.Lock()
 	se.Expressions[id].Result = res
