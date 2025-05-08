@@ -1,15 +1,27 @@
 package sqlite
 
 import (
-	"context"
 	"database/sql"
+	"os"
 )
 
 type Storage struct {
 	db *sql.DB
 }
 
-func CreateTables(ctx context.Context, db *sql.DB) error {
+func New(storagePath string) (*Storage, error) {
+	const op = "storage.sqlite.New"
+	db, err := sql.Open("sqlite3", storagePath)
+	if err != nil {
+		os.Exit(1)
+	}
+	err = CreateTables(db)
+	if err != nil {
+		os.Exit(1)
+	}
+	return &Storage{db}, nil
+}
+func CreateTables(db *sql.DB) error {
 	const (
 		usersTable = `
 	CREATE TABLE IF NOT EXISTS users(
@@ -28,10 +40,10 @@ func CreateTables(ctx context.Context, db *sql.DB) error {
 		FOREIGN KEY (user_id)  REFERENCES user(id) ON DELETE CASCADE
 	);`
 	)
-	if _, err := db.ExecContext(ctx, usersTable); err != nil {
+	if _, err := db.Exec(usersTable); err != nil {
 		return err
 	}
-	if _, err := db.ExecContext(ctx, expressionsTable); err != nil {
+	if _, err := db.Exec(expressionsTable); err != nil {
 		return err
 	}
 	return nil
@@ -39,7 +51,7 @@ func CreateTables(ctx context.Context, db *sql.DB) error {
 
 type (
 	User struct {
-		ID       int64
+		ID       string
 		Login    string
 		Password string
 	}
@@ -49,15 +61,15 @@ type (
 		Expression string
 		Answer     string
 		Status     string
-		UserID     int64
+		UserID     string
 	}
 )
 
-func AddUser(ctx context.Context, db *sql.DB, user *User) (int64, error) {
+func (s *Storage) AddUser(login, password string) (int64, error) {
 	var q = `
 	INSERT INTO users (login, password) values ($1, $2)
 	`
-	result, err := db.ExecContext(ctx, q, user.Login, user.Password)
+	result, err := s.db.Exec(q, login, password)
 	if err != nil {
 		return 0, err
 	}
@@ -69,11 +81,11 @@ func AddUser(ctx context.Context, db *sql.DB, user *User) (int64, error) {
 	return id, nil
 }
 
-func AddExpression(ctx context.Context, db *sql.DB, expression *Expression) (int64, error) {
+func (s *Storage) AddExpression(expression *Expression) (int64, error) {
 	var q = `
 	INSERT INTO expressions (expression, user_id) values ($1, $2)
 	`
-	result, err := db.ExecContext(ctx, q, expression.Expression, expression.UserID)
+	result, err := s.db.Exec(q, expression.Expression, expression.UserID)
 	if err != nil {
 		return 0, err
 	}
@@ -84,11 +96,11 @@ func AddExpression(ctx context.Context, db *sql.DB, expression *Expression) (int
 
 	return id, nil
 }
-func GetExpressions(ctx context.Context, db *sql.DB, id int64) ([]Expression, error) {
+func (s *Storage) GetExpressions(id int64) ([]Expression, error) {
 	var expressions []Expression
 	var q = "SELECT id, expression, user_id FROM expressions WHERE user_id = $1"
 
-	rows, err := db.QueryContext(ctx, q, id)
+	rows, err := s.db.Query(q, id)
 	if err != nil {
 		return nil, err
 	}
@@ -104,23 +116,23 @@ func GetExpressions(ctx context.Context, db *sql.DB, id int64) ([]Expression, er
 	}
 	return expressions, nil
 }
-func GetExpressionById(ctx context.Context, db *sql.DB, ex_id int64, user_id int64) Expression {
+func (s *Storage) GetExpressionById(ex_id int64, user_id int64) Expression {
 	var q = "SELECT expression, answer, status WHERE id = $1 AND user_id = $2"
 	var ex Expression
-	_ = db.QueryRowContext(ctx, q, ex_id, user_id).Scan(&ex.Expression, &ex.Answer, &ex.Status)
+	_ = s.db.QueryRow(q, ex_id, user_id).Scan(&ex.Expression, &ex.Answer, &ex.Status)
 	return ex
 }
-func UpdateUserPassword(ctx context.Context, db *sql.DB, id int64, pass string) error {
+func (s *Storage) UpdateUserPassword(id int64, pass string) error {
 	var q = "UPDATE users SET password = $1 WHERE id = $2"
-	_, err := db.ExecContext(ctx, q, pass, id)
+	_, err := s.db.Exec(q, pass, id)
 	if err != nil {
 		return err
 	}
 	return nil
 }
-func SetResult(ctx context.Context, db *sql.DB, id int64, res string) error {
+func (s *Storage) SetResult(id int64, res string) error {
 	var q = "UPDATE expressions SET answer = $1 WHERE id = $2"
-	_, err := db.ExecContext(ctx, q, res, id)
+	_, err := s.db.Exec(q, res, id)
 	if err != nil {
 		return err
 	}
