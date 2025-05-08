@@ -291,6 +291,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(500)
 		}
 		userFromDB, err := db.GetUser(login)
+		
 		if err != nil {
 			w.WriteHeader(500)
 		}
