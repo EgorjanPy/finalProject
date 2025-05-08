@@ -2,6 +2,9 @@ package sqlite
 
 import (
 	"database/sql"
+	"errors"
+	"fmt"
+	_ "github.com/mattn/go-sqlite3"
 	"os"
 )
 
@@ -11,12 +14,19 @@ type Storage struct {
 
 func New(storagePath string) (*Storage, error) {
 	const op = "storage.sqlite.New"
-	db, err := sql.Open("sqlite3", storagePath)
+	db, err := sql.Open("sqlite3", "store.db")
 	if err != nil {
+		fmt.Printf("cant open db, %v", err)
+		os.Exit(1)
+	}
+	err = db.Ping()
+	if err != nil {
+		fmt.Printf("cant ping db, %v", err)
 		os.Exit(1)
 	}
 	err = CreateTables(db)
 	if err != nil {
+		fmt.Printf("cant create tables, %v", err)
 		os.Exit(1)
 	}
 	return &Storage{db}, nil
@@ -65,6 +75,20 @@ type (
 	}
 )
 
+func (s *Storage) UserExists(login string) (bool, error) {
+	var exists bool
+	query := `SELECT EXISTS(SELECT 1 FROM users WHERE login = $1)`
+	err := s.db.QueryRow(query, login).Scan(&exists)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return exists, nil
+}
 func (s *Storage) AddUser(login, password string) (int64, error) {
 	var q = `
 	INSERT INTO users (login, password) values ($1, $2)
@@ -131,12 +155,24 @@ func (s *Storage) UpdateUserPassword(id int64, pass string) error {
 	return nil
 }
 func (s *Storage) SetResult(id int64, res string) error {
-	var q = "UPDATE expressions SET answer = $1 WHERE id = $2"
+	var q = "UPDATE expressions SET answer = $1, status = completed WHERE id = $2"
 	_, err := s.db.Exec(q, res, id)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (s *Storage) GetUser(login string) (User, error) {
+	var (
+		user User
+		err  error
+	)
+
+	var q = "SELECT id, login, password FROM users WHERE login=$1"
+	err = s.db.QueryRow(q, login).Scan(&user.ID, &user.Login, &user.Password)
+
+	return user, err
 }
 
 // Insert user +

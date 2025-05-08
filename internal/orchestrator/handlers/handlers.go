@@ -1,9 +1,13 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"finalProject/internal/config"
 	"finalProject/internal/orchestrator/logic"
+	"finalProject/internal/storage/sqlite"
+	"fmt"
+
 	"io"
 	"log"
 	"net/http"
@@ -17,6 +21,8 @@ import (
 )
 
 var cfg = config.MustLoad()
+var db, _ = sqlite.New(cfg.StoragePath)
+var ctx = context.TODO()
 
 type ExpressionsResponse struct {
 	Expressions []logic.Expression
@@ -40,7 +46,7 @@ type CalculateRequest struct {
 	Expression string `json:"expression"`
 }
 type CalculateResponse struct {
-	Id int `json:"id"`
+	Id int64 `json:"id"`
 }
 
 func isValidExpression(expression string) bool {
@@ -107,7 +113,10 @@ func CalculateHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(422)
 		return
 	}
-	id := logic.NewEx(request.Expression)
+	//token := r.Header.Get("Authorization")
+	userID := r.Header.Get("id")
+	id, err := db.AddExpression(&sqlite.Expression{UserID: userID, Expression: request.Expression})
+	logic.NewEx(request.Expression)
 	response := CalculateResponse{Id: id}
 	jsonBytes, err := json.Marshal(response)
 	if err != nil {
@@ -219,8 +228,8 @@ func GetSetTask(w http.ResponseWriter, r *http.Request) {
 }
 
 type RegisterRequest struct {
-	Login    string
-	Password string
+	Login    string `json:"login"`
+	Password string `json:"password"`
 }
 
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
@@ -235,14 +244,27 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		var request RegisterRequest
 		err = json.Unmarshal(body, &request)
 		if err != nil {
-			log.Fatal("cant unmarsahl body :(")
+			log.Fatalf("cant unmarsahl body, %v", err)
 			w.WriteHeader(500)
-			return
 		}
 		login := request.Login
 		password := request.Password
-		// Проверка на занятность логина
-		// Добавление в БД
+		// Проверка на существование пользователя с данным логином
+		if ok, _ := db.UserExists(login); ok {
+			log.Fatal("юзер с данным логином уже существует")
+			w.WriteHeader(500)
+		}
+		hashedPass, err := logic.Generate(password)
+		if err != nil {
+			log.Fatal("cant hashig pass")
+			w.WriteHeader(500)
+		}
+		id, err := db.AddUser(login, hashedPass)
+		if err != nil {
+			log.Fatal("cant add user")
+			w.WriteHeader(500)
+		}
+		r.Header.Set("id", fmt.Sprint(id))
 	}
 }
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -263,16 +285,22 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		login := request.Login
 		password := request.Password
-		// Проверка пароля по логину в БД
+		//user := logic.User{Password: password, Login: login}
+		if ok, _ := db.UserExists(login); !ok {
+			log.Fatal("Пользователя с данным логином не существует")
+			w.WriteHeader(500)
+		}
+		userFromDB, err := db.GetUser(login)
+		if err != nil {
+			w.WriteHeader(500)
+		}
+		err = logic.ComparePassword(userFromDB.Password, password)
+		if err != nil {
+			w.WriteHeader(500)
+		}
+
 		// Если всё гуд то генерируем токен
-		t, rt := logic.GengerateJWT(login)
-		r.AddCookie(&http.Cookie{
-			Name:  "token",
-			Value: t,
-		})
-		r.AddCookie(
-			&http.Cookie{
-				Name:  "refresh_token",
-				Value: rt,
-			})
+		//t, rt := logic.GengerateJWT(login)
+		//r.Header.Set("Authorization", "Bearer"+t)
+	}
 }
