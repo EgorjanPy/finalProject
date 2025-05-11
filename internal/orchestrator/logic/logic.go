@@ -330,16 +330,16 @@ func Compare(hash string, s string) error {
 
 const hmacSampleSecret = "super_secret_signature"
 
-func GengerateJWT(user_name string) (string, string) {
+func GengerateJWT(id string) (string, string) {
 	now := time.Now()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"name": user_name,
-		"nbf":  now.Unix(),
-		"exp":  now.Add(15 * time.Minute).Unix(),
-		"iat":  now.Unix(),
+		"id":  id,
+		"nbf": now.Unix(),
+		"exp": now.Add(24 * time.Hour).Unix(),
+		"iat": now.Unix(),
 	})
 	refresh_token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"name": user_name,
+		"name": id,
 		"nbf":  now.Unix(),
 		"exp":  now.Add(240 * time.Hour).Unix(),
 		"iat":  now.Unix(),
@@ -349,7 +349,7 @@ func GengerateJWT(user_name string) (string, string) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(tokenString)
+	//fmt.Println(tokenString)
 	// return  c.JSON(LoginResponse{AccessToken: refresh_tokenString})
 	return tokenString, refresh_tokenString
 }

@@ -14,7 +14,7 @@ type Storage struct {
 
 func New(storagePath string) (*Storage, error) {
 	const op = "storage.sqlite.New"
-	db, err := sql.Open("sqlite3", "store.db")
+	db, err := sql.Open("sqlite3", storagePath)
 	if err != nil {
 		fmt.Printf("cant open db, %v", err)
 		os.Exit(1)
@@ -89,20 +89,20 @@ func (s *Storage) UserExists(login string) (bool, error) {
 
 	return exists, nil
 }
-func (s *Storage) AddUser(login, password string) (int64, error) {
+func (s *Storage) AddUser(login, password string) (string, error) {
 	var q = `
 	INSERT INTO users (login, password) values ($1, $2)
 	`
 	result, err := s.db.Exec(q, login, password)
 	if err != nil {
-		return 0, err
+		return "0", err
 	}
 	id, err := result.LastInsertId()
 	if err != nil {
-		return 0, err
+		return "0", err
 	}
 
-	return id, nil
+	return fmt.Sprint(id), nil
 }
 
 func (s *Storage) AddExpression(expression *Expression) (int64, error) {

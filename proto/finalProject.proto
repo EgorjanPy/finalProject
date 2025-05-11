@@ -1,0 +1,27 @@
+syntax = "proto3"; // версия proto файлов
+package finalProject; // название пакета
+option go_package = "./proto";
+
+message ExprRequest {
+  float val1 = 1;
+  float val2 = 2;
+  string op = 3;
+}
+message AddResponse {
+  float result = 1;
+}
+message SubResponse{
+  float result = 1;
+}
+message MulResponse{
+  float result = 1;
+}
+message DiffResponse{
+  float result = 1;
+}
+service CalcService {
+  rpc Add (ExprRequest) returns (AddResponse);
+  rpc Sub (ExprRequest) returns (SubResponse);
+  rpc Mul (ExprRequest) returns (MulResponse);
+  rpc Diff (ExprRequest) returns (DiffResponse);
+}

@@ -1,13 +1,10 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"finalProject/internal/config"
 	"finalProject/internal/orchestrator/logic"
 	"finalProject/internal/storage/sqlite"
-	"fmt"
-
 	"io"
 	"log"
 	"net/http"
@@ -22,7 +19,6 @@ import (
 
 var cfg = config.MustLoad()
 var db, _ = sqlite.New(cfg.StoragePath)
-var ctx = context.TODO()
 
 type ExpressionsResponse struct {
 	Expressions []logic.Expression
@@ -114,8 +110,9 @@ func CalculateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//token := r.Header.Get("Authorization")
-	userID := r.Header.Get("id")
-	id, err := db.AddExpression(&sqlite.Expression{UserID: userID, Expression: request.Expression})
+
+	userID, _ := r.Cookie("id")
+	id, err := db.AddExpression(&sqlite.Expression{UserID: userID.Value, Expression: request.Expression})
 	logic.NewEx(request.Expression)
 	response := CalculateResponse{Id: id}
 	jsonBytes, err := json.Marshal(response)
@@ -227,7 +224,7 @@ func GetSetTask(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type RegisterRequest struct {
+type RegisterLoginRequest struct {
 	Login    string `json:"login"`
 	Password string `json:"password"`
 }
@@ -240,8 +237,9 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(500)
 			return
 		}
+
 		defer r.Body.Close()
-		var request RegisterRequest
+		var request RegisterLoginRequest
 		err = json.Unmarshal(body, &request)
 		if err != nil {
 			log.Fatalf("cant unmarsahl body, %v", err)
@@ -256,7 +254,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		hashedPass, err := logic.Generate(password)
 		if err != nil {
-			log.Fatal("cant hashig pass")
+			log.Fatal("cant hashing pass")
 			w.WriteHeader(500)
 		}
 		id, err := db.AddUser(login, hashedPass)
@@ -264,7 +262,9 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 			log.Fatal("cant add user")
 			w.WriteHeader(500)
 		}
-		r.Header.Set("id", fmt.Sprint(id))
+		r.Header.Set("id", id)
+		//cookieToken, err := r.Cookie("token")
+		//a := cookieToken.Value
 	}
 }
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -276,7 +276,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		defer r.Body.Close()
-		var request RegisterRequest
+		var request RegisterLoginRequest
 		err = json.Unmarshal(body, &request)
 		if err != nil {
 			log.Fatal("cant unmarsahl body :(")
@@ -285,13 +285,11 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		login := request.Login
 		password := request.Password
-		//user := logic.User{Password: password, Login: login}
 		if ok, _ := db.UserExists(login); !ok {
 			log.Fatal("Пользователя с данным логином не существует")
 			w.WriteHeader(500)
 		}
 		userFromDB, err := db.GetUser(login)
-		
 		if err != nil {
 			w.WriteHeader(500)
 		}
@@ -300,8 +298,11 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(500)
 		}
 
-		// Если всё гуд то генерируем токен
-		//t, rt := logic.GengerateJWT(login)
-		//r.Header.Set("Authorization", "Bearer"+t)
+		// Если всё гуд, то генерируем токен
+		t, rt := logic.GengerateJWT(userFromDB.ID)
+		cookieAccess := &http.Cookie{Name: "accessYoken", Value: t, Secure: true}
+		cookieRefresh := &http.Cookie{Name: "refreshToken", Value: rt, Secure: true}
+		http.SetCookie(w, cookieAccess)
+		http.SetCookie(w, cookieRefresh)
 	}
 }
