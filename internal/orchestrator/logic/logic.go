@@ -140,6 +140,7 @@ func NewEx(expression string) int {
 	Expressions.AddExpression(Ex)
 	go func(id int) {
 		res, _ := ParseAndEvaluate(Ex)
+		Expressions.SetResult(id, res)
 		storage.DataBase.SetResult(int64(id), fmt.Sprint(res))
 		// fmt.Println("Expression ", id, " = ", res)
 	}(id)

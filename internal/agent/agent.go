@@ -38,7 +38,7 @@ func (a *Application) StartAgent() {
 		log.Println("could not connect to grpc server: ", err)
 		return
 	}
-	defer conn.Close()
+	//defer conn.Close()
 
 	grpcClient := pb.NewCalcServiceClient(conn)
 	ctx := context.Background()
@@ -58,35 +58,38 @@ func (a *Application) StartAgent() {
 			var res float32
 			switch task.Operation {
 			case "+":
-				log.Println("res =", task.Arg1+task.Arg2)
 				res = task.Arg1 + task.Arg2
+				log.Printf("%d %f + %f = %f", task.Id, task.Arg1, task.Arg2, res)
 				time.Sleep(time.Duration(task.OperationTime))
 			case "-":
-				log.Println("res =", task.Arg1-task.Arg2)
 				res = task.Arg1 - task.Arg2
+				log.Printf("%d %f - %f = %f", task.Id, task.Arg1, task.Arg2, res)
 				time.Sleep(time.Duration(task.OperationTime))
 
 			case "*":
-				log.Println("res =", task.Arg1*task.Arg2)
 				res = task.Arg1 * task.Arg2
+				log.Printf("%d %f * %f = %f", task.Id, task.Arg1, task.Arg2, res)
 				time.Sleep(time.Duration(task.OperationTime))
 
 			case "/":
-				log.Println("res =", task.Arg1/task.Arg2)
 				if task.Arg2 == 0 {
 					log.Println("division by zero")
 					continue
 				}
-				time.Sleep(time.Duration(task.OperationTime))
 				res = task.Arg1 / task.Arg2
+				log.Printf("%d %f / %f = %f", task.Id, task.Arg1, task.Arg2, res)
+				time.Sleep(time.Duration(task.OperationTime))
 			}
+
 			_, err = grpcClient.SetTask(ctx, &pb.SetTaskRequest{
 				Id:     task.Id,
 				Result: res,
 			})
 			if err != nil {
 				log.Println("failed to set task result: ", err)
+				continue
 			}
+			continue
 		}
 	}
 }
