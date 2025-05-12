@@ -155,7 +155,7 @@ func (s *Storage) UpdateUserPassword(id int64, pass string) error {
 	return nil
 }
 func (s *Storage) SetResult(id int64, res string) error {
-	var q = "UPDATE expressions SET answer = $1, status = completed WHERE id = $2"
+	var q = "UPDATE expressions SET answer = $1 WHERE id = $2"
 	_, err := s.db.Exec(q, res, id)
 	if err != nil {
 		return err

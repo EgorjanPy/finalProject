@@ -1,12 +1,12 @@
 package agent
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
+	pb "finalProject/proto"
 	"fmt"
-	"io"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"log"
-	"net/http"
 	"sync"
 	"time"
 )
@@ -14,78 +14,93 @@ import (
 type Application struct {
 	Port           string
 	ComputingPower int
+	stopChan       chan struct{} // Канал для остановки горутин
+	wg             sync.WaitGroup
 }
 
 func New(port string, computing_power int) *Application {
-	return &Application{Port: port, ComputingPower: computing_power}
-}
-
-type Request struct {
-	Id     int
-	Result float64
-}
-type Response struct {
-	Id             int           `json:"id"`
-	Arg1           float64       `json:"arg1"`
-	Arg2           float64       `json:"arg2"`
-	Operation      string        `json:"operation"`
-	Operation_time time.Duration `json:"operation_time"`
+	return &Application{
+		Port:           port,
+		ComputingPower: computing_power,
+		stopChan:       make(chan struct{}),
+	}
 }
 
 func (a *Application) StartAgent() {
+	defer a.wg.Done() // Уменьшаем счетчик WaitGroup при завершении
+
+	host := "localhost"
+	port := "5000"
+	addr := fmt.Sprintf("%s:%s", host, port)
+
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Println("could not connect to grpc server: ", err)
+		return
+	}
+	defer conn.Close()
+
+	grpcClient := pb.NewCalcServiceClient(conn)
+	ctx := context.Background()
 
 	for {
-		url := fmt.Sprintf("http://localhost%s/internal/task", a.Port)
-		resp, err := http.Get(url)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		var response Response
-		json.Unmarshal(body, &response)
-		var res float64
-		switch response.Operation {
-		case "+":
-			res = response.Arg1 + response.Arg2
-			time.Sleep(response.Operation_time)
-		case "-":
-			res = response.Arg1 - response.Arg2
-			time.Sleep(response.Operation_time)
-		case "*":
-			res = response.Arg1 * response.Arg2
-			time.Sleep(response.Operation_time)
-		case "/":
-			res = response.Arg1 / response.Arg2
-			time.Sleep(response.Operation_time)
-		}
-		request := Request{}
-		request.Id = response.Id
-		request.Result = res
-		jsonData, _ := json.Marshal(request)
-		req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
-		if err != nil {
-			fmt.Println("Ошибка при создании запроса:", err)
+		select {
+		case <-a.stopChan: // Проверяем сигнал остановки
+			log.Println("Stopping agent...")
 			return
+		default:
+			task, err := grpcClient.GetTask(ctx, &pb.GetTaskRequest{})
+			if err != nil {
+				time.Sleep(time.Second * 2) // Пауза перед повторной попыткой
+				continue
+			}
+
+			var res float32
+			switch task.Operation {
+			case "+":
+				log.Println("res =", task.Arg1+task.Arg2)
+				res = task.Arg1 + task.Arg2
+				time.Sleep(time.Duration(task.OperationTime))
+			case "-":
+				log.Println("res =", task.Arg1-task.Arg2)
+				res = task.Arg1 - task.Arg2
+				time.Sleep(time.Duration(task.OperationTime))
+
+			case "*":
+				log.Println("res =", task.Arg1*task.Arg2)
+				res = task.Arg1 * task.Arg2
+				time.Sleep(time.Duration(task.OperationTime))
+
+			case "/":
+				log.Println("res =", task.Arg1/task.Arg2)
+				if task.Arg2 == 0 {
+					log.Println("division by zero")
+					continue
+				}
+				time.Sleep(time.Duration(task.OperationTime))
+				res = task.Arg1 / task.Arg2
+			}
+			_, err = grpcClient.SetTask(ctx, &pb.SetTaskRequest{
+				Id:     task.Id,
+				Result: res,
+			})
+			if err != nil {
+				log.Println("failed to set task result: ", err)
+			}
 		}
-		req.Header.Set("Content-Type", "application/json")
-		client := &http.Client{}
-		response2, err := client.Do(req)
-		if err != nil {
-			fmt.Println("Ошибка при выполнении запроса:", err)
-			return
-		}
-		defer response2.Body.Close()
-		time.Sleep(time.Second * 1) // Правила пишутся кровью. Это нужно чтобы оркестратор не ложился тк получается что агент его дудосит
 	}
 }
+
 func (a *Application) StartApp() {
-	wg := &sync.WaitGroup{}
-	wg.Add(a.ComputingPower)
-	for _ = range a.ComputingPower {
+	// Запускаем указанное количество горутин
+	for i := 0; i < a.ComputingPower; i++ {
+		a.wg.Add(1)
 		go a.StartAgent()
 	}
-	wg.Wait()
+}
+
+func (a *Application) Stop() {
+	close(a.stopChan) // Посылаем сигнал остановки всем горутинам
+	a.wg.Wait()       // Ждем завершения всех горутин
+	log.Println("All agents stopped")
 }

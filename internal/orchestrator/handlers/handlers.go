@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"finalProject/internal/config"
 	"finalProject/internal/orchestrator/logic"
+	"finalProject/internal/storage"
 	"finalProject/internal/storage/sqlite"
 	"io"
 	"log"
@@ -18,7 +19,6 @@ import (
 )
 
 var cfg = config.MustLoad()
-var db, _ = sqlite.New(cfg.StoragePath)
 
 type ExpressionsResponse struct {
 	Expressions []logic.Expression
@@ -111,8 +111,8 @@ func CalculateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	//token := r.Header.Get("Authorization")
 
-	userID, _ := r.Cookie("id")
-	id, err := db.AddExpression(&sqlite.Expression{UserID: userID.Value, Expression: request.Expression})
+	//userID, _ := r.Cookie("id")
+	id, err := storage.DataBase.AddExpression(&sqlite.Expression{UserID: "1", Expression: request.Expression})
 	logic.NewEx(request.Expression)
 	response := CalculateResponse{Id: id}
 	jsonBytes, err := json.Marshal(response)
@@ -248,7 +248,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		login := request.Login
 		password := request.Password
 		// Проверка на существование пользователя с данным логином
-		if ok, _ := db.UserExists(login); ok {
+		if ok, _ := storage.DataBase.UserExists(login); ok {
 			log.Fatal("юзер с данным логином уже существует")
 			w.WriteHeader(500)
 		}
@@ -257,7 +257,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 			log.Fatal("cant hashing pass")
 			w.WriteHeader(500)
 		}
-		id, err := db.AddUser(login, hashedPass)
+		id, err := storage.DataBase.AddUser(login, hashedPass)
 		if err != nil {
 			log.Fatal("cant add user")
 			w.WriteHeader(500)
@@ -285,11 +285,11 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		login := request.Login
 		password := request.Password
-		if ok, _ := db.UserExists(login); !ok {
+		if ok, _ := storage.DataBase.UserExists(login); !ok {
 			log.Fatal("Пользователя с данным логином не существует")
 			w.WriteHeader(500)
 		}
-		userFromDB, err := db.GetUser(login)
+		userFromDB, err := storage.DataBase.GetUser(login)
 		if err != nil {
 			w.WriteHeader(500)
 		}

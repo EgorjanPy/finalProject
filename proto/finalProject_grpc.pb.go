@@ -19,20 +19,20 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	CalcService_Add_FullMethodName  = "/finalProject.CalcService/Add"
-	CalcService_Sub_FullMethodName  = "/finalProject.CalcService/Sub"
-	CalcService_Mul_FullMethodName  = "/finalProject.CalcService/Mul"
-	CalcService_Diff_FullMethodName = "/finalProject.CalcService/Diff"
+	CalcService_GetTask_FullMethodName = "/finalProject.CalcService/GetTask"
+	CalcService_SetTask_FullMethodName = "/finalProject.CalcService/SetTask"
 )
 
 // CalcServiceClient is the client API for CalcService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CalcServiceClient interface {
-	Add(ctx context.Context, in *ExprRequest, opts ...grpc.CallOption) (*AddResponse, error)
-	Sub(ctx context.Context, in *ExprRequest, opts ...grpc.CallOption) (*SubResponse, error)
-	Mul(ctx context.Context, in *ExprRequest, opts ...grpc.CallOption) (*MulResponse, error)
-	Diff(ctx context.Context, in *ExprRequest, opts ...grpc.CallOption) (*DiffResponse, error)
+	// rpc Add (ExprRequest) returns (AddResponse);
+	// rpc Sub (ExprRequest) returns (SubResponse);
+	// rpc Mul (ExprRequest) returns (MulResponse);
+	// rpc Diff (ExprRequest) returns (DiffResponse);
+	GetTask(ctx context.Context, in *GetTaskRequest, opts ...grpc.CallOption) (*GetTaskResponse, error)
+	SetTask(ctx context.Context, in *SetTaskRequest, opts ...grpc.CallOption) (*SetTaskResponse, error)
 }
 
 type calcServiceClient struct {
@@ -43,40 +43,20 @@ func NewCalcServiceClient(cc grpc.ClientConnInterface) CalcServiceClient {
 	return &calcServiceClient{cc}
 }
 
-func (c *calcServiceClient) Add(ctx context.Context, in *ExprRequest, opts ...grpc.CallOption) (*AddResponse, error) {
+func (c *calcServiceClient) GetTask(ctx context.Context, in *GetTaskRequest, opts ...grpc.CallOption) (*GetTaskResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AddResponse)
-	err := c.cc.Invoke(ctx, CalcService_Add_FullMethodName, in, out, cOpts...)
+	out := new(GetTaskResponse)
+	err := c.cc.Invoke(ctx, CalcService_GetTask_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *calcServiceClient) Sub(ctx context.Context, in *ExprRequest, opts ...grpc.CallOption) (*SubResponse, error) {
+func (c *calcServiceClient) SetTask(ctx context.Context, in *SetTaskRequest, opts ...grpc.CallOption) (*SetTaskResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SubResponse)
-	err := c.cc.Invoke(ctx, CalcService_Sub_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *calcServiceClient) Mul(ctx context.Context, in *ExprRequest, opts ...grpc.CallOption) (*MulResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(MulResponse)
-	err := c.cc.Invoke(ctx, CalcService_Mul_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *calcServiceClient) Diff(ctx context.Context, in *ExprRequest, opts ...grpc.CallOption) (*DiffResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DiffResponse)
-	err := c.cc.Invoke(ctx, CalcService_Diff_FullMethodName, in, out, cOpts...)
+	out := new(SetTaskResponse)
+	err := c.cc.Invoke(ctx, CalcService_SetTask_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -87,10 +67,12 @@ func (c *calcServiceClient) Diff(ctx context.Context, in *ExprRequest, opts ...g
 // All implementations must embed UnimplementedCalcServiceServer
 // for forward compatibility.
 type CalcServiceServer interface {
-	Add(context.Context, *ExprRequest) (*AddResponse, error)
-	Sub(context.Context, *ExprRequest) (*SubResponse, error)
-	Mul(context.Context, *ExprRequest) (*MulResponse, error)
-	Diff(context.Context, *ExprRequest) (*DiffResponse, error)
+	// rpc Add (ExprRequest) returns (AddResponse);
+	// rpc Sub (ExprRequest) returns (SubResponse);
+	// rpc Mul (ExprRequest) returns (MulResponse);
+	// rpc Diff (ExprRequest) returns (DiffResponse);
+	GetTask(context.Context, *GetTaskRequest) (*GetTaskResponse, error)
+	SetTask(context.Context, *SetTaskRequest) (*SetTaskResponse, error)
 	mustEmbedUnimplementedCalcServiceServer()
 }
 
@@ -101,17 +83,11 @@ type CalcServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedCalcServiceServer struct{}
 
-func (UnimplementedCalcServiceServer) Add(context.Context, *ExprRequest) (*AddResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Add not implemented")
+func (UnimplementedCalcServiceServer) GetTask(context.Context, *GetTaskRequest) (*GetTaskResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTask not implemented")
 }
-func (UnimplementedCalcServiceServer) Sub(context.Context, *ExprRequest) (*SubResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Sub not implemented")
-}
-func (UnimplementedCalcServiceServer) Mul(context.Context, *ExprRequest) (*MulResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Mul not implemented")
-}
-func (UnimplementedCalcServiceServer) Diff(context.Context, *ExprRequest) (*DiffResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Diff not implemented")
+func (UnimplementedCalcServiceServer) SetTask(context.Context, *SetTaskRequest) (*SetTaskResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetTask not implemented")
 }
 func (UnimplementedCalcServiceServer) mustEmbedUnimplementedCalcServiceServer() {}
 func (UnimplementedCalcServiceServer) testEmbeddedByValue()                     {}
@@ -134,74 +110,38 @@ func RegisterCalcServiceServer(s grpc.ServiceRegistrar, srv CalcServiceServer) {
 	s.RegisterService(&CalcService_ServiceDesc, srv)
 }
 
-func _CalcService_Add_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ExprRequest)
+func _CalcService_GetTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTaskRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CalcServiceServer).Add(ctx, in)
+		return srv.(CalcServiceServer).GetTask(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: CalcService_Add_FullMethodName,
+		FullMethod: CalcService_GetTask_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CalcServiceServer).Add(ctx, req.(*ExprRequest))
+		return srv.(CalcServiceServer).GetTask(ctx, req.(*GetTaskRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _CalcService_Sub_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ExprRequest)
+func _CalcService_SetTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetTaskRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CalcServiceServer).Sub(ctx, in)
+		return srv.(CalcServiceServer).SetTask(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: CalcService_Sub_FullMethodName,
+		FullMethod: CalcService_SetTask_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CalcServiceServer).Sub(ctx, req.(*ExprRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CalcService_Mul_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ExprRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CalcServiceServer).Mul(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CalcService_Mul_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CalcServiceServer).Mul(ctx, req.(*ExprRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CalcService_Diff_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ExprRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CalcServiceServer).Diff(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CalcService_Diff_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CalcServiceServer).Diff(ctx, req.(*ExprRequest))
+		return srv.(CalcServiceServer).SetTask(ctx, req.(*SetTaskRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -214,20 +154,12 @@ var CalcService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*CalcServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Add",
-			Handler:    _CalcService_Add_Handler,
+			MethodName: "GetTask",
+			Handler:    _CalcService_GetTask_Handler,
 		},
 		{
-			MethodName: "Sub",
-			Handler:    _CalcService_Sub_Handler,
-		},
-		{
-			MethodName: "Mul",
-			Handler:    _CalcService_Mul_Handler,
-		},
-		{
-			MethodName: "Diff",
-			Handler:    _CalcService_Diff_Handler,
+			MethodName: "SetTask",
+			Handler:    _CalcService_SetTask_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

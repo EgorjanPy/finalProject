@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"finalProject/internal/storage"
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -58,7 +59,7 @@ func (se *SaveExpressions) GetExpressionById(id int) (Expression, error) {
 }
 
 type Task struct {
-	Id        int
+	Id        int32
 	Arg1      float64
 	Arg2      float64
 	Operation string
@@ -135,11 +136,11 @@ var Tasks = SaveTasks{
 func NewEx(expression string) int {
 	id := len(Expressions.Expressions)
 	Ex := Expression{Id: id, Expression: strings.ReplaceAll(expression, " ", ""), Status: "processing"}
-
+	fmt.Println(Ex.Expression)
 	Expressions.AddExpression(Ex)
 	go func(id int) {
 		res, _ := ParseAndEvaluate(Ex)
-		Expressions.SetResult(id, res)
+		storage.DataBase.SetResult(int64(id), fmt.Sprint(res))
 		// fmt.Println("Expression ", id, " = ", res)
 	}(id)
 	return id

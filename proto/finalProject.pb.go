@@ -21,29 +21,49 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type ExprRequest struct {
+//	message ExprRequest {
+//	 float val1 = 1;
+//	 float val2 = 2;
+//	 string op = 3;
+//	}
+//
+//	message AddResponse {
+//	 float result = 1;
+//	}
+//
+//	message SubResponse{
+//	 float result = 1;
+//	}
+//
+//	message MulResponse{
+//	 float result = 1;
+//	}
+//
+//	message DiffResponse{
+//	 float result = 1;
+//	}
+type SetTaskRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Val1          float32                `protobuf:"fixed32,1,opt,name=val1,proto3" json:"val1,omitempty"`
-	Val2          float32                `protobuf:"fixed32,2,opt,name=val2,proto3" json:"val2,omitempty"`
-	Op            string                 `protobuf:"bytes,3,opt,name=op,proto3" json:"op,omitempty"`
+	Id            int32                  `protobuf:"varint,1,opt,name=Id,proto3" json:"Id,omitempty"`
+	Result        float32                `protobuf:"fixed32,2,opt,name=Result,proto3" json:"Result,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ExprRequest) Reset() {
-	*x = ExprRequest{}
+func (x *SetTaskRequest) Reset() {
+	*x = SetTaskRequest{}
 	mi := &file_proto_finalProject_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ExprRequest) String() string {
+func (x *SetTaskRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ExprRequest) ProtoMessage() {}
+func (*SetTaskRequest) ProtoMessage() {}
 
-func (x *ExprRequest) ProtoReflect() protoreflect.Message {
+func (x *SetTaskRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_proto_finalProject_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -55,204 +75,169 @@ func (x *ExprRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ExprRequest.ProtoReflect.Descriptor instead.
-func (*ExprRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use SetTaskRequest.ProtoReflect.Descriptor instead.
+func (*SetTaskRequest) Descriptor() ([]byte, []int) {
 	return file_proto_finalProject_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ExprRequest) GetVal1() float32 {
+func (x *SetTaskRequest) GetId() int32 {
 	if x != nil {
-		return x.Val1
+		return x.Id
 	}
 	return 0
 }
 
-func (x *ExprRequest) GetVal2() float32 {
+func (x *SetTaskRequest) GetResult() float32 {
 	if x != nil {
-		return x.Val2
+		return x.Result
 	}
 	return 0
 }
 
-func (x *ExprRequest) GetOp() string {
+type SetTaskResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetTaskResponse) Reset() {
+	*x = SetTaskResponse{}
+	mi := &file_proto_finalProject_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetTaskResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetTaskResponse) ProtoMessage() {}
+
+func (x *SetTaskResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_finalProject_proto_msgTypes[1]
 	if x != nil {
-		return x.Op
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetTaskResponse.ProtoReflect.Descriptor instead.
+func (*SetTaskResponse) Descriptor() ([]byte, []int) {
+	return file_proto_finalProject_proto_rawDescGZIP(), []int{1}
+}
+
+type GetTaskRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetTaskRequest) Reset() {
+	*x = GetTaskRequest{}
+	mi := &file_proto_finalProject_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTaskRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTaskRequest) ProtoMessage() {}
+
+func (x *GetTaskRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_finalProject_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTaskRequest.ProtoReflect.Descriptor instead.
+func (*GetTaskRequest) Descriptor() ([]byte, []int) {
+	return file_proto_finalProject_proto_rawDescGZIP(), []int{2}
+}
+
+type GetTaskResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int32                  `protobuf:"varint,1,opt,name=Id,proto3" json:"Id,omitempty"`
+	Arg1          float32                `protobuf:"fixed32,2,opt,name=Arg1,proto3" json:"Arg1,omitempty"`
+	Arg2          float32                `protobuf:"fixed32,3,opt,name=Arg2,proto3" json:"Arg2,omitempty"`
+	Operation     string                 `protobuf:"bytes,4,opt,name=Operation,proto3" json:"Operation,omitempty"`
+	OperationTime int32                  `protobuf:"varint,5,opt,name=Operation_time,json=OperationTime,proto3" json:"Operation_time,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetTaskResponse) Reset() {
+	*x = GetTaskResponse{}
+	mi := &file_proto_finalProject_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTaskResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTaskResponse) ProtoMessage() {}
+
+func (x *GetTaskResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_finalProject_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTaskResponse.ProtoReflect.Descriptor instead.
+func (*GetTaskResponse) Descriptor() ([]byte, []int) {
+	return file_proto_finalProject_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *GetTaskResponse) GetId() int32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *GetTaskResponse) GetArg1() float32 {
+	if x != nil {
+		return x.Arg1
+	}
+	return 0
+}
+
+func (x *GetTaskResponse) GetArg2() float32 {
+	if x != nil {
+		return x.Arg2
+	}
+	return 0
+}
+
+func (x *GetTaskResponse) GetOperation() string {
+	if x != nil {
+		return x.Operation
 	}
 	return ""
 }
 
-type AddResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Result        float32                `protobuf:"fixed32,1,opt,name=result,proto3" json:"result,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *AddResponse) Reset() {
-	*x = AddResponse{}
-	mi := &file_proto_finalProject_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *AddResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*AddResponse) ProtoMessage() {}
-
-func (x *AddResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_finalProject_proto_msgTypes[1]
+func (x *GetTaskResponse) GetOperationTime() int32 {
 	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use AddResponse.ProtoReflect.Descriptor instead.
-func (*AddResponse) Descriptor() ([]byte, []int) {
-	return file_proto_finalProject_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *AddResponse) GetResult() float32 {
-	if x != nil {
-		return x.Result
-	}
-	return 0
-}
-
-type SubResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Result        float32                `protobuf:"fixed32,1,opt,name=result,proto3" json:"result,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SubResponse) Reset() {
-	*x = SubResponse{}
-	mi := &file_proto_finalProject_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SubResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SubResponse) ProtoMessage() {}
-
-func (x *SubResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_finalProject_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SubResponse.ProtoReflect.Descriptor instead.
-func (*SubResponse) Descriptor() ([]byte, []int) {
-	return file_proto_finalProject_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *SubResponse) GetResult() float32 {
-	if x != nil {
-		return x.Result
-	}
-	return 0
-}
-
-type MulResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Result        float32                `protobuf:"fixed32,1,opt,name=result,proto3" json:"result,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *MulResponse) Reset() {
-	*x = MulResponse{}
-	mi := &file_proto_finalProject_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *MulResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*MulResponse) ProtoMessage() {}
-
-func (x *MulResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_finalProject_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use MulResponse.ProtoReflect.Descriptor instead.
-func (*MulResponse) Descriptor() ([]byte, []int) {
-	return file_proto_finalProject_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *MulResponse) GetResult() float32 {
-	if x != nil {
-		return x.Result
-	}
-	return 0
-}
-
-type DiffResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Result        float32                `protobuf:"fixed32,1,opt,name=result,proto3" json:"result,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DiffResponse) Reset() {
-	*x = DiffResponse{}
-	mi := &file_proto_finalProject_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DiffResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DiffResponse) ProtoMessage() {}
-
-func (x *DiffResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_finalProject_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DiffResponse.ProtoReflect.Descriptor instead.
-func (*DiffResponse) Descriptor() ([]byte, []int) {
-	return file_proto_finalProject_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *DiffResponse) GetResult() float32 {
-	if x != nil {
-		return x.Result
+		return x.OperationTime
 	}
 	return 0
 }
@@ -261,24 +246,21 @@ var File_proto_finalProject_proto protoreflect.FileDescriptor
 
 const file_proto_finalProject_proto_rawDesc = "" +
 	"\n" +
-	"\x18proto/finalProject.proto\x12\ffinalProject\"E\n" +
-	"\vExprRequest\x12\x12\n" +
-	"\x04val1\x18\x01 \x01(\x02R\x04val1\x12\x12\n" +
-	"\x04val2\x18\x02 \x01(\x02R\x04val2\x12\x0e\n" +
-	"\x02op\x18\x03 \x01(\tR\x02op\"%\n" +
-	"\vAddResponse\x12\x16\n" +
-	"\x06result\x18\x01 \x01(\x02R\x06result\"%\n" +
-	"\vSubResponse\x12\x16\n" +
-	"\x06result\x18\x01 \x01(\x02R\x06result\"%\n" +
-	"\vMulResponse\x12\x16\n" +
-	"\x06result\x18\x01 \x01(\x02R\x06result\"&\n" +
-	"\fDiffResponse\x12\x16\n" +
-	"\x06result\x18\x01 \x01(\x02R\x06result2\x83\x02\n" +
-	"\vCalcService\x12;\n" +
-	"\x03Add\x12\x19.finalProject.ExprRequest\x1a\x19.finalProject.AddResponse\x12;\n" +
-	"\x03Sub\x12\x19.finalProject.ExprRequest\x1a\x19.finalProject.SubResponse\x12;\n" +
-	"\x03Mul\x12\x19.finalProject.ExprRequest\x1a\x19.finalProject.MulResponse\x12=\n" +
-	"\x04Diff\x12\x19.finalProject.ExprRequest\x1a\x1a.finalProject.DiffResponseB\tZ\a./protob\x06proto3"
+	"\x18proto/finalProject.proto\x12\ffinalProject\"8\n" +
+	"\x0eSetTaskRequest\x12\x0e\n" +
+	"\x02Id\x18\x01 \x01(\x05R\x02Id\x12\x16\n" +
+	"\x06Result\x18\x02 \x01(\x02R\x06Result\"\x11\n" +
+	"\x0fSetTaskResponse\"\x10\n" +
+	"\x0eGetTaskRequest\"\x8e\x01\n" +
+	"\x0fGetTaskResponse\x12\x0e\n" +
+	"\x02Id\x18\x01 \x01(\x05R\x02Id\x12\x12\n" +
+	"\x04Arg1\x18\x02 \x01(\x02R\x04Arg1\x12\x12\n" +
+	"\x04Arg2\x18\x03 \x01(\x02R\x04Arg2\x12\x1c\n" +
+	"\tOperation\x18\x04 \x01(\tR\tOperation\x12%\n" +
+	"\x0eOperation_time\x18\x05 \x01(\x05R\rOperationTime2\x9d\x01\n" +
+	"\vCalcService\x12F\n" +
+	"\aGetTask\x12\x1c.finalProject.GetTaskRequest\x1a\x1d.finalProject.GetTaskResponse\x12F\n" +
+	"\aSetTask\x12\x1c.finalProject.SetTaskRequest\x1a\x1d.finalProject.SetTaskResponseB\tZ\a./protob\x06proto3"
 
 var (
 	file_proto_finalProject_proto_rawDescOnce sync.Once
@@ -292,25 +274,20 @@ func file_proto_finalProject_proto_rawDescGZIP() []byte {
 	return file_proto_finalProject_proto_rawDescData
 }
 
-var file_proto_finalProject_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_proto_finalProject_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_proto_finalProject_proto_goTypes = []any{
-	(*ExprRequest)(nil),  // 0: finalProject.ExprRequest
-	(*AddResponse)(nil),  // 1: finalProject.AddResponse
-	(*SubResponse)(nil),  // 2: finalProject.SubResponse
-	(*MulResponse)(nil),  // 3: finalProject.MulResponse
-	(*DiffResponse)(nil), // 4: finalProject.DiffResponse
+	(*SetTaskRequest)(nil),  // 0: finalProject.SetTaskRequest
+	(*SetTaskResponse)(nil), // 1: finalProject.SetTaskResponse
+	(*GetTaskRequest)(nil),  // 2: finalProject.GetTaskRequest
+	(*GetTaskResponse)(nil), // 3: finalProject.GetTaskResponse
 }
 var file_proto_finalProject_proto_depIdxs = []int32{
-	0, // 0: finalProject.CalcService.Add:input_type -> finalProject.ExprRequest
-	0, // 1: finalProject.CalcService.Sub:input_type -> finalProject.ExprRequest
-	0, // 2: finalProject.CalcService.Mul:input_type -> finalProject.ExprRequest
-	0, // 3: finalProject.CalcService.Diff:input_type -> finalProject.ExprRequest
-	1, // 4: finalProject.CalcService.Add:output_type -> finalProject.AddResponse
-	2, // 5: finalProject.CalcService.Sub:output_type -> finalProject.SubResponse
-	3, // 6: finalProject.CalcService.Mul:output_type -> finalProject.MulResponse
-	4, // 7: finalProject.CalcService.Diff:output_type -> finalProject.DiffResponse
-	4, // [4:8] is the sub-list for method output_type
-	0, // [0:4] is the sub-list for method input_type
+	2, // 0: finalProject.CalcService.GetTask:input_type -> finalProject.GetTaskRequest
+	0, // 1: finalProject.CalcService.SetTask:input_type -> finalProject.SetTaskRequest
+	3, // 2: finalProject.CalcService.GetTask:output_type -> finalProject.GetTaskResponse
+	1, // 3: finalProject.CalcService.SetTask:output_type -> finalProject.SetTaskResponse
+	2, // [2:4] is the sub-list for method output_type
+	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -327,7 +304,7 @@ func file_proto_finalProject_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_finalProject_proto_rawDesc), len(file_proto_finalProject_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
