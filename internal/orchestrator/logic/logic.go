@@ -2,6 +2,7 @@ package logic
 
 import (
 	"finalProject/internal/storage"
+	"finalProject/internal/storage/sqlite"
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -14,49 +15,48 @@ import (
 )
 
 type Expression struct {
-	Id         int
+	Id         int64
 	Expression string
-	Status     string
 	Result     float64
 }
 
-type SaveExpressions struct {
-	mu          sync.Mutex
-	Expressions []Expression
-}
+//type SaveExpressions struct {
+//	mu          sync.Mutex
+//	Expressions []Expression
+//}
+//
+//var Expressions = SaveExpressions{
+//	mu:          sync.Mutex{},
+//	Expressions: []Expression{},
+//}
 
-var Expressions = SaveExpressions{
-	mu:          sync.Mutex{},
-	Expressions: []Expression{},
-}
-
-func (se *SaveExpressions) GetExpressions() []Expression {
-	se.mu.Lock()
-	defer se.mu.Unlock()
-	return se.Expressions
-}
-
-func (se *SaveExpressions) SetResult(id int, res float64) {
-	se.mu.Lock()
-	se.Expressions[id].Result = res
-	se.Expressions[id].Status = "complited"
-	se.mu.Unlock()
-}
-func (se *SaveExpressions) AddExpression(ex Expression) {
-	se.mu.Lock()
-	se.Expressions = append(se.Expressions, ex)
-	se.mu.Unlock()
-}
-func (se *SaveExpressions) GetExpressionById(id int) (Expression, error) {
-	se.mu.Lock()
-	defer se.mu.Unlock()
-	for _, ex := range se.Expressions {
-		if ex.Id == id {
-			return ex, nil
-		}
-	}
-	return Expression{}, fmt.Errorf("not found")
-}
+//func (se *SaveExpressions) GetExpressions() []Expression {
+//	se.mu.Lock()
+//	defer se.mu.Unlock()
+//	return se.Expressions
+//}
+//
+//func (se *SaveExpressions) SetResult(id int, res float64) {
+//	se.mu.Lock()
+//	se.Expressions[id].Result = res
+//	se.Expressions[id].Status = "complited"
+//	se.mu.Unlock()
+//}
+//func (se *SaveExpressions) AddExpression(ex Expression) {
+//	se.mu.Lock()
+//	se.Expressions = append(se.Expressions, ex)
+//	se.mu.Unlock()
+//}
+//func (se *SaveExpressions) GetExpressionById(id int) (Expression, error) {
+//	se.mu.Lock()
+//	defer se.mu.Unlock()
+//	for _, ex := range se.Expressions {
+//		if ex.Id == id {
+//			return ex, nil
+//		}
+//	}
+//	return Expression{}, fmt.Errorf("not found")
+//}
 
 type Task struct {
 	Id        int32
@@ -133,16 +133,18 @@ var Tasks = SaveTasks{
 	Tasks: map[int]Task{},
 }
 
-func NewEx(expression string) int {
-	id := len(Expressions.Expressions)
-	Ex := Expression{Id: id, Expression: strings.ReplaceAll(expression, " ", ""), Status: "processing"}
-	fmt.Println(Ex.Expression)
-	Expressions.AddExpression(Ex)
-	go func(id int) {
+func NewEx(expression string) int64 {
+	//id := len(Expressions.Expressions)
+	id, err := storage.DataBase.AddExpression(&sqlite.Expression{UserID: "1", Expression: expression})
+	if err != nil {
+		fmt.Printf("Error %v", err)
+	}
+	Ex := Expression{Id: id, Expression: strings.ReplaceAll(expression, " ", "")}
+	go func(id int64) {
 		res, _ := ParseAndEvaluate(Ex)
-		Expressions.SetResult(id, res)
+		//Expressions.SetResult(id, res)
 		storage.DataBase.SetResult(int64(id), fmt.Sprint(res))
-		// fmt.Println("Expression ", id, " = ", res)
+		fmt.Println("Expression ", id, " = ", res)
 	}(id)
 	return id
 }
@@ -329,40 +331,6 @@ func Compare(hash string, s string) error {
 	existing := []byte(hash)
 	return bcrypt.CompareHashAndPassword(existing, incoming)
 }
-
-const hmacSampleSecret = "super_secret_signature"
-
-func GengerateJWT(id string) (string, string) {
-	now := time.Now()
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":  id,
-		"nbf": now.Unix(),
-		"exp": now.Add(24 * time.Hour).Unix(),
-		"iat": now.Unix(),
-	})
-	refresh_token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"name": id,
-		"nbf":  now.Unix(),
-		"exp":  now.Add(240 * time.Hour).Unix(),
-		"iat":  now.Unix(),
-	})
-	tokenString, err := token.SignedString([]byte(hmacSampleSecret))
-	refresh_tokenString, err := refresh_token.SignedString([]byte(hmacSampleSecret))
-	if err != nil {
-		panic(err)
-	}
-	//fmt.Println(tokenString)
-	// return  c.JSON(LoginResponse{AccessToken: refresh_tokenString})
-	return tokenString, refresh_tokenString
-}
-
-//type User struct {
-//	ID             int64
-//	Login          string
-//	Password       string
-//	OriginPassword string
-//}
-
 func ComparePassword(hashedPass, pass string) error {
 	err := Compare(hashedPass, pass)
 	if err != nil {
@@ -373,6 +341,69 @@ func ComparePassword(hashedPass, pass string) error {
 	log.Println("auth success")
 	return nil
 }
+
+var secretKey = []byte("secret-key")
+
+func CreateToken(userID string) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
+		jwt.MapClaims{
+			"userID": userID,
+			"exp":    time.Now().Add(time.Hour * 24).Unix(),
+		})
+
+	tokenString, err := token.SignedString(secretKey)
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
+}
+func VerifyToken(tokenString string) error {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return secretKey, nil
+	})
+	if err != nil {
+		return err
+	}
+	if !token.Valid {
+		return fmt.Errorf("invalid token")
+	}
+	
+	return nil
+}
+
+//const hmacSampleSecret = "super_secret_signature"
+//
+//func GengerateJWT(id string) (string, string) {
+//	now := time.Now()
+//	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+//		"id":  id,
+//		"nbf": now.Unix(),
+//		"exp": now.Add(24 * time.Hour).Unix(),
+//		"iat": now.Unix(),
+//	})
+//	refresh_token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+//		"name": id,
+//		"nbf":  now.Unix(),
+//		"exp":  now.Add(240 * time.Hour).Unix(),
+//		"iat":  now.Unix(),
+//	})
+//	tokenString, err := token.SignedString([]byte(hmacSampleSecret))
+//	refresh_tokenString, err := refresh_token.SignedString([]byte(hmacSampleSecret))
+//	if err != nil {
+//		panic(err)
+//	}
+//	//fmt.Println(tokenString)
+//	// return  c.JSON(LoginResponse{AccessToken: refresh_tokenString})
+//	return tokenString, refresh_tokenString
+//}
+
+//type User struct {
+//	ID             int64
+//	Login          string
+//	Password       string
+//	OriginPassword string
+//}
 
 //func ValidateToken(tokenString string) string {
 //	tokenFromString, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {

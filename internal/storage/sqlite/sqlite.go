@@ -89,20 +89,20 @@ func (s *Storage) UserExists(login string) (bool, error) {
 
 	return exists, nil
 }
-func (s *Storage) AddUser(login, password string) (string, error) {
+func (s *Storage) AddUser(login, password string) (int64, error) {
 	var q = `
 	INSERT INTO users (login, password) values ($1, $2)
 	`
 	result, err := s.db.Exec(q, login, password)
 	if err != nil {
-		return "0", err
+		return 0, err
 	}
 	id, err := result.LastInsertId()
 	if err != nil {
-		return "0", err
+		return 0, err
 	}
 
-	return fmt.Sprint(id), nil
+	return id, nil
 }
 
 func (s *Storage) AddExpression(expression *Expression) (int64, error) {
@@ -155,7 +155,12 @@ func (s *Storage) UpdateUserPassword(id int64, pass string) error {
 	return nil
 }
 func (s *Storage) SetResult(id int64, res string) error {
-	var q = "UPDATE expressions SET answer = $1 WHERE id = $2"
+	var q = `
+        UPDATE expressions 
+        SET answer = $1, 
+            status = 'completed'
+        WHERE id = $2
+    `
 	_, err := s.db.Exec(q, res, id)
 	if err != nil {
 		return err

@@ -6,6 +6,7 @@ import (
 	"finalProject/internal/orchestrator/logic"
 	"finalProject/internal/storage"
 	"finalProject/internal/storage/sqlite"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -21,17 +22,18 @@ import (
 var cfg = config.MustLoad()
 
 type ExpressionsResponse struct {
-	Expressions []logic.Expression
+	Expressions []sqlite.Expression
 }
 
 func isSign(value rune) bool {
 	return value == '+' || value == '-' || value == '*' || value == '/'
 }
 func ExpressionsHandler(w http.ResponseWriter, r *http.Request) {
-	response := ExpressionsResponse{Expressions: logic.Expressions.GetExpressions()}
+	expressions, err := storage.DataBase.GetExpressions(1)
+	response := ExpressionsResponse{Expressions: expressions}
 	jsonBytes, err := json.Marshal(response)
 	if err != nil {
-		log.Fatal("cant marsahl response :(")
+		log.Println("cant marsahl response :(")
 		w.WriteHeader(500)
 		return
 	}
@@ -95,29 +97,26 @@ func areParenthesesBalanced(expression string) bool {
 func CalculateHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Fatal("cant read body :(")
+		log.Println("cant read body :(")
 		w.WriteHeader(500)
 	}
 	defer r.Body.Close()
 	var request CalculateRequest
 	err = json.Unmarshal(body, &request)
 	if err != nil {
-		log.Fatal("cant unmarsahl body :(")
+		log.Println("cant unmarsahl body :(")
 		w.WriteHeader(500)
 	}
 	if !isValidExpression(request.Expression) {
 		w.WriteHeader(422)
 		return
 	}
-	//token := r.Header.Get("Authorization")
-
-	//userID, _ := r.Cookie("id")
-	id, err := storage.DataBase.AddExpression(&sqlite.Expression{UserID: "1", Expression: request.Expression})
-	logic.NewEx(request.Expression)
+	// Брать userID из кук
+	id := logic.NewEx(request.Expression)
 	response := CalculateResponse{Id: id}
 	jsonBytes, err := json.Marshal(response)
 	if err != nil {
-		log.Fatal("cant marsahl response :(")
+		log.Println("cant marsahl response :(")
 		w.WriteHeader(500)
 	}
 	w.WriteHeader(201)
@@ -125,7 +124,7 @@ func CalculateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type GetExpressionResponse struct {
-	Expression logic.Expression
+	Expression sqlite.Expression
 }
 
 func GetExpressionByIdHandler(w http.ResponseWriter, r *http.Request) {
@@ -136,14 +135,14 @@ func GetExpressionByIdHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		return
 	}
-	ex, err := logic.Expressions.GetExpressionById(id)
+	ex := storage.DataBase.GetExpressionById(int64(id), 1)
 	if err != nil {
 		w.WriteHeader(404)
 	}
 	response := GetExpressionResponse{ex}
 	jsonBytes, err := json.Marshal(response)
 	if err != nil {
-		log.Fatal("cant marsahl response :(")
+		log.Println("cant marsahl response :(")
 		w.WriteHeader(500)
 		return
 	}
@@ -176,7 +175,7 @@ func GetSetTask(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			log.Fatal("cant read body :(")
+			log.Println("cant read body :(")
 			w.WriteHeader(500)
 			return
 		}
@@ -184,7 +183,7 @@ func GetSetTask(w http.ResponseWriter, r *http.Request) {
 		var request GetSetTaskRequest
 		err = json.Unmarshal(body, &request)
 		if err != nil {
-			log.Fatal("cant unmarsahl body :(")
+			log.Println("cant unmarsahl body :(")
 			w.WriteHeader(500)
 			return
 		}
@@ -233,7 +232,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			log.Fatal("cant read body :(")
+			log.Println("cant read body :(")
 			w.WriteHeader(500)
 			return
 		}
@@ -242,67 +241,72 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		var request RegisterLoginRequest
 		err = json.Unmarshal(body, &request)
 		if err != nil {
-			log.Fatalf("cant unmarsahl body, %v", err)
+			log.Println("cant unmarsahl body, %v", err)
 			w.WriteHeader(500)
 		}
 		login := request.Login
 		password := request.Password
 		// Проверка на существование пользователя с данным логином
 		if ok, _ := storage.DataBase.UserExists(login); ok {
-			log.Fatal("юзер с данным логином уже существует")
+			log.Println("юзер с данным логином уже существует")
 			w.WriteHeader(500)
 		}
 		hashedPass, err := logic.Generate(password)
 		if err != nil {
-			log.Fatal("cant hashing pass")
+			log.Println("cant hashing pass")
 			w.WriteHeader(500)
 		}
 		id, err := storage.DataBase.AddUser(login, hashedPass)
 		if err != nil {
-			log.Fatal("cant add user")
+			log.Println("cant add user")
 			w.WriteHeader(500)
 		}
-		r.Header.Set("id", id)
+		//fmt.Println(id)
+		r.Header.Set("id", string(id))
 		//cookieToken, err := r.Cookie("token")
 		//a := cookieToken.Value
 	}
 }
+
+type User struct {
+	Login    string
+	Password string
+}
+
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			log.Fatal("cant read body :(")
-			w.WriteHeader(500)
-			return
-		}
-		defer r.Body.Close()
-		var request RegisterLoginRequest
-		err = json.Unmarshal(body, &request)
-		if err != nil {
-			log.Fatal("cant unmarsahl body :(")
-			w.WriteHeader(500)
-			return
-		}
-		login := request.Login
-		password := request.Password
+		w.Header().Set("Content-Type", "application/json")
+		var u User
+		json.NewDecoder(r.Body).Decode(&u)
+		login := u.Login
+		password := u.Password
 		if ok, _ := storage.DataBase.UserExists(login); !ok {
-			log.Fatal("Пользователя с данным логином не существует")
+			log.Println("Пользователя с данным логином не существует")
 			w.WriteHeader(500)
+			return
 		}
 		userFromDB, err := storage.DataBase.GetUser(login)
 		if err != nil {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
 		err = logic.ComparePassword(userFromDB.Password, password)
 		if err != nil {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusUnauthorized)
+			log.Println("Неверный пароль")
+			return
 		}
-
-		// Если всё гуд, то генерируем токен
-		t, rt := logic.GengerateJWT(userFromDB.ID)
-		cookieAccess := &http.Cookie{Name: "accessYoken", Value: t, Secure: true}
-		cookieRefresh := &http.Cookie{Name: "refreshToken", Value: rt, Secure: true}
-		http.SetCookie(w, cookieAccess)
-		http.SetCookie(w, cookieRefresh)
+		tokenString, err := logic.CreateToken(userFromDB.ID)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println("No username found")
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, tokenString)
+		return
+	} else {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
 	}
 }

@@ -13,28 +13,30 @@ func TestDataBase(t *testing.T) {
 		fmt.Errorf("Error %v", err)
 		//return
 	}
-	id, err := storage.AddUser("egor", "1234")
+	userId, err := storage.AddUser("egor", "1234")
 	if err != nil {
 		fmt.Errorf("Error %v", err)
 		return
 	}
+	//id1, _ := strconv.Atoi(userId)
 	exID, err := storage.AddExpression(&sqlite.Expression{
-		ID:         id,
+		ID:         userId,
 		Expression: "2+2",
 	})
 	if err != nil {
 		fmt.Errorf("Error %v", err)
 		return
 	}
-	ex := storage.GetExpressionById(exID, id)
+	//storage.SetResult(exID, "4")
+	ex := storage.GetExpressionById(exID, userId)
 	fmt.Println(ex.Expression)
 	err = storage.SetResult(exID, "4")
 	if err != nil {
 		fmt.Errorf("Error %v", err)
 		return
 	}
-	storage.UpdateUserPassword(id, "qwerty")
-	storage.UpdateUserPassword(id, "qwerty")
+	storage.UpdateUserPassword(userId, "qwerty")
+	storage.UpdateUserPassword(userId, "qwerty")
 
 }
 

@@ -30,7 +30,7 @@ func New(port string) *Application {
 }
 
 func (s *Server) GetTask(ctx context.Context, in *pb.GetTaskRequest) (*pb.GetTaskResponse, error) {
-	fmt.Println("GET")
+	//fmt.Println("GET")
 	id := logic.Results.GetLen()
 	task, err := logic.Tasks.GetTaskById(id)
 	if err != nil {
@@ -40,7 +40,7 @@ func (s *Server) GetTask(ctx context.Context, in *pb.GetTaskRequest) (*pb.GetTas
 }
 
 func (s *Server) SetTask(ctx context.Context, in *pb.SetTaskRequest) (*pb.SetTaskResponse, error) {
-	fmt.Println("SET")
+	//fmt.Println("SET")
 	logic.Results.SetResult(int(in.Id), float64(in.Result))
 	return &pb.SetTaskResponse{}, nil
 }
@@ -66,11 +66,9 @@ func (a *Application) RunServer() (error, error) {
 	}()
 
 	r := mux.NewRouter()
-
-	r.HandleFunc("/api/v1/calculate", middleware.LoggerMiddleware(handlers.CalculateHandler))
-	r.HandleFunc("/api/v1/expressions", middleware.LoggerMiddleware(handlers.ExpressionsHandler))
-	r.HandleFunc("/api/v1/expressions/{id}", middleware.LoggerMiddleware(handlers.GetExpressionByIdHandler))
-	r.HandleFunc("/internal/task", handlers.GetSetTask)
+	r.HandleFunc("/api/v1/calculate", middleware.LoggerMiddleware(middleware.ProtectedHandler(handlers.CalculateHandler)))
+	r.HandleFunc("/api/v1/expressions", middleware.LoggerMiddleware(middleware.ProtectedHandler(handlers.ExpressionsHandler)))
+	r.HandleFunc("/api/v1/expressions/{id}", middleware.LoggerMiddleware(middleware.ProtectedHandler(handlers.GetExpressionByIdHandler)))
 	r.HandleFunc("/api/v1/register", handlers.RegisterHandler)
 	r.HandleFunc("/api/v1/login", handlers.LoginHandler)
 	http.Handle("/", r)
