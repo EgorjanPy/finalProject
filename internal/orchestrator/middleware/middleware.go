@@ -16,6 +16,9 @@ func LoggerMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		next.ServeHTTP(w, r)
 	})
 }
+
+var secretKey = []byte("secret-key")
+
 func ProtectedHandler(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -32,7 +35,7 @@ func ProtectedHandler(next http.HandlerFunc) http.HandlerFunc {
 			fmt.Fprint(w, "Invalid token")
 			return
 		}
-		fmt.Fprint(w, "Welcome to the the protected area")
+		//fmt.Fprint(w, "Welcome to the the protected area")
 		next.ServeHTTP(w, r)
 	})
 }

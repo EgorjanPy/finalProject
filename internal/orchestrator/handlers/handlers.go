@@ -111,8 +111,8 @@ func CalculateHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(422)
 		return
 	}
-	// Брать userID из кук
-	id := logic.NewEx(request.Expression)
+	// Брать userID из заголовка
+	id := logic.NewEx(request.Expression, r.Header.Get("userID"))
 	response := CalculateResponse{Id: id}
 	jsonBytes, err := json.Marshal(response)
 	if err != nil {
@@ -135,7 +135,9 @@ func GetExpressionByIdHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		return
 	}
-	ex := storage.DataBase.GetExpressionById(int64(id), 1)
+	userID := r.Header.Get("userID")
+	userID1, _ := strconv.Atoi(userID)
+	ex := storage.DataBase.GetExpressionById(int64(id), int64(userID1))
 	if err != nil {
 		w.WriteHeader(404)
 	}
@@ -283,23 +285,27 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		if ok, _ := storage.DataBase.UserExists(login); !ok {
 			log.Println("Пользователя с данным логином не существует")
 			w.WriteHeader(500)
+			w.Write([]byte("Пользователя с данным логином не существует"))
 			return
 		}
 		userFromDB, err := storage.DataBase.GetUser(login)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte("Пользователя с данным логином не существует"))
 			return
 		}
 		err = logic.ComparePassword(userFromDB.Password, password)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			log.Println("Неверный пароль")
+			w.Write([]byte("Неверный пароль"))
 			return
 		}
 		tokenString, err := logic.CreateToken(userFromDB.ID)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Println("No username found")
+			w.Write([]byte("No username found"))
 			return
 		}
 		w.WriteHeader(http.StatusOK)

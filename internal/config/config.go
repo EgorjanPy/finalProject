@@ -16,6 +16,7 @@ type Config struct {
 	Port           string        `yaml:"PORT" env-default:"8080"`
 	ComputingPower int           `yaml:"COMPUTING_POWER" env-default:"2"`
 	StoragePath    string        `yaml:"storage_path"`
+	Secret         string        `yaml:"jwt_secret"`
 }
 
 func MustLoad() *Config {

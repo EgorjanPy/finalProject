@@ -5,3 +5,4 @@ TIME_DIVISIONS_MS: 1000ms
 COMPUTING_POWER: 4
 PORT: ":8080"
 storage_path: "./store.db"
+jwt_secret: "very_very_secret_token"

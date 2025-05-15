@@ -133,9 +133,9 @@ var Tasks = SaveTasks{
 	Tasks: map[int]Task{},
 }
 
-func NewEx(expression string) int64 {
+func NewEx(expression string, userID string) int64 {
 	//id := len(Expressions.Expressions)
-	id, err := storage.DataBase.AddExpression(&sqlite.Expression{UserID: "1", Expression: expression})
+	id, err := storage.DataBase.AddExpression(&sqlite.Expression{UserID: userID, Expression: expression})
 	if err != nil {
 		fmt.Printf("Error %v", err)
 	}
@@ -368,7 +368,7 @@ func VerifyToken(tokenString string) error {
 	if !token.Valid {
 		return fmt.Errorf("invalid token")
 	}
-	
+
 	return nil
 }
 

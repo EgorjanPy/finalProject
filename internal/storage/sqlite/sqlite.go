@@ -122,7 +122,7 @@ func (s *Storage) AddExpression(expression *Expression) (int64, error) {
 }
 func (s *Storage) GetExpressions(id int64) ([]Expression, error) {
 	var expressions []Expression
-	var q = "SELECT id, expression, user_id FROM expressions WHERE user_id = $1"
+	var q = "SELECT * FROM expressions WHERE user_id = $1"
 
 	rows, err := s.db.Query(q, id)
 	if err != nil {
@@ -132,7 +132,7 @@ func (s *Storage) GetExpressions(id int64) ([]Expression, error) {
 
 	for rows.Next() {
 		e := Expression{}
-		err := rows.Scan(&e.ID, &e.Expression, &e.UserID)
+		err := rows.Scan(&e.ID, &e.Expression, &e.UserID, &e.Answer, &e.Status)
 		if err != nil {
 			return nil, err
 		}
@@ -173,10 +173,8 @@ func (s *Storage) GetUser(login string) (User, error) {
 		user User
 		err  error
 	)
-
 	var q = "SELECT id, login, password FROM users WHERE login=$1"
 	err = s.db.QueryRow(q, login).Scan(&user.ID, &user.Login, &user.Password)
-
 	return user, err
 }
 
