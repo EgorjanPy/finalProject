@@ -69,7 +69,7 @@ type (
 	Expression struct {
 		ID         int64
 		Expression string
-		Answer     string
+		Answer     sql.NullString
 		Status     string
 		UserID     string
 	}
@@ -122,14 +122,12 @@ func (s *Storage) AddExpression(expression *Expression) (int64, error) {
 }
 func (s *Storage) GetExpressions(id int64) ([]Expression, error) {
 	var expressions []Expression
-	var q = "SELECT * FROM expressions WHERE user_id = $1"
-
+	var q = `SELECT * FROM expressions WHERE user_id = $1`
 	rows, err := s.db.Query(q, id)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
 	for rows.Next() {
 		e := Expression{}
 		err := rows.Scan(&e.ID, &e.Expression, &e.UserID, &e.Answer, &e.Status)
@@ -140,11 +138,17 @@ func (s *Storage) GetExpressions(id int64) ([]Expression, error) {
 	}
 	return expressions, nil
 }
-func (s *Storage) GetExpressionById(ex_id int64, user_id int64) Expression {
-	var q = "SELECT expression, answer, status WHERE id = $1 AND user_id = $2"
-	var ex Expression
-	_ = s.db.QueryRow(q, ex_id, user_id).Scan(&ex.Expression, &ex.Answer, &ex.Status)
-	return ex
+func (s *Storage) GetExpressionById(ex_id int64, user_id int64) (Expression, error) {
+	var q = "SELECT expression, answer, status FROM expressions WHERE id = $1 AND user_id = $2"
+	ex := Expression{
+		UserID: fmt.Sprint(user_id),
+		ID:     ex_id,
+	}
+	err := s.db.QueryRow(q, ex_id, user_id).Scan(&ex.Expression, &ex.Answer, &ex.Status)
+	if err != nil {
+		return Expression{}, err
+	}
+	return ex, nil
 }
 func (s *Storage) UpdateUserPassword(id int64, pass string) error {
 	var q = "UPDATE users SET password = $1 WHERE id = $2"

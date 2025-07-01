@@ -13,7 +13,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 	"unicode"
 
 	"github.com/gorilla/mux"
@@ -27,17 +26,6 @@ type ExpressionsResponse struct {
 
 func isSign(value rune) bool {
 	return value == '+' || value == '-' || value == '*' || value == '/'
-}
-func ExpressionsHandler(w http.ResponseWriter, r *http.Request) {
-	expressions, err := storage.DataBase.GetExpressions(1)
-	response := ExpressionsResponse{Expressions: expressions}
-	jsonBytes, err := json.Marshal(response)
-	if err != nil {
-		log.Println("cant marsahl response :(")
-		w.WriteHeader(500)
-		return
-	}
-	w.Write(jsonBytes)
 }
 
 type CalculateRequest struct {
@@ -94,6 +82,22 @@ func areParenthesesBalanced(expression string) bool {
 	}
 	return len(stack) == 0
 }
+func GetUserID(r *http.Request) (string, bool) {
+	token := r.Header.Get("Authorization")
+	tokenString := token[len("Bearer "):]
+	jwtPayload, ok := logic.JwtPayloadsFromToken(tokenString)
+
+	if !ok {
+		log.Println("invalid token claims")
+		return "", false
+	}
+	userID, ok := jwtPayload["sub"].(string)
+	if !ok {
+		log.Println("cant find sub from claims")
+		return "", false
+	}
+	return userID, true
+}
 func CalculateHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -111,8 +115,12 @@ func CalculateHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(422)
 		return
 	}
-	// Брать userID из заголовка
-	id := logic.NewEx(request.Expression, r.Header.Get("userID"))
+	userID, ok := GetUserID(r)
+	if !ok {
+		log.Println("cant get userID from claims")
+		w.WriteHeader(401)
+	}
+	id := logic.NewEx(request.Expression, userID)
 	response := CalculateResponse{Id: id}
 	jsonBytes, err := json.Marshal(response)
 	if err != nil {
@@ -127,6 +135,27 @@ type GetExpressionResponse struct {
 	Expression sqlite.Expression
 }
 
+func ExpressionsHandler(w http.ResponseWriter, r *http.Request) {
+	userID, ok := GetUserID(r)
+	if !ok {
+		log.Println("cant get userID from claims")
+		w.WriteHeader(401)
+	}
+	intUserID, _ := strconv.Atoi(userID)
+	expressions, err := storage.DataBase.GetExpressions(int64(intUserID))
+	if err != nil {
+		log.Printf("error %v", err)
+
+	}
+	response := ExpressionsResponse{Expressions: expressions}
+	jsonBytes, err := json.Marshal(response)
+	if err != nil {
+		log.Println("cant marsahl response :(")
+		w.WriteHeader(500)
+		return
+	}
+	w.Write(jsonBytes)
+}
 func GetExpressionByIdHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	strId := vars["id"]
@@ -135,9 +164,13 @@ func GetExpressionByIdHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		return
 	}
-	userID := r.Header.Get("userID")
-	userID1, _ := strconv.Atoi(userID)
-	ex := storage.DataBase.GetExpressionById(int64(id), int64(userID1))
+	userID, ok := GetUserID(r)
+	if !ok {
+		log.Println("cant get userID from claims")
+		w.WriteHeader(401)
+	}
+	intUserID, _ := strconv.Atoi(userID)
+	ex, err := storage.DataBase.GetExpressionById(int64(id), int64(intUserID))
 	if err != nil {
 		w.WriteHeader(404)
 	}
@@ -149,80 +182,6 @@ func GetExpressionByIdHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(jsonBytes)
-}
-
-type GetSetTaskResponse struct {
-	Id             int           `json:"id"`
-	Arg1           float64       `json:"arg1"`
-	Arg2           float64       `json:"arg2"`
-	Operation      string        `json:"operation"`
-	Operation_time time.Duration `json:"operation_time"`
-}
-type GetSetTaskRequest struct {
-	Id     int     `json:"id"`
-	Result float64 `json:"result"`
-}
-
-func isValidResult(result string) bool {
-	cleanedExpression := removeSpaces(result)
-	validPattern := `[0-9]`
-	matched, err := regexp.MatchString(validPattern, cleanedExpression)
-	if err != nil || !matched {
-		return false
-	}
-	return true
-
-}
-func GetSetTask(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			log.Println("cant read body :(")
-			w.WriteHeader(500)
-			return
-		}
-		defer r.Body.Close()
-		var request GetSetTaskRequest
-		err = json.Unmarshal(body, &request)
-		if err != nil {
-			log.Println("cant unmarsahl body :(")
-			w.WriteHeader(500)
-			return
-		}
-
-		if logic.Tasks.GetLen() <= request.Id {
-			w.WriteHeader(404)
-			return
-		}
-		logic.Results.SetResult(request.Id, request.Result)
-		return
-	}
-	if r.Method == http.MethodGet {
-		id := logic.Results.GetLen()
-		task, err := logic.Tasks.GetTaskById(id)
-		if err != nil {
-			w.WriteHeader(404)
-			return
-		}
-		response := GetSetTaskResponse{Id: id, Arg1: task.Arg1, Arg2: task.Arg2, Operation: task.Operation}
-		switch task.Operation {
-		case "+":
-			response.Operation_time = cfg.TimeAddMs
-		case "-":
-			response.Operation_time = cfg.TimeDivMs
-		case "*":
-			response.Operation_time = cfg.TimeSubMs
-		case "/":
-			response.Operation_time = cfg.TimeMulMs
-		}
-		jsonRes, err := json.Marshal(response)
-		if err != nil {
-			w.WriteHeader(500)
-			return
-		}
-		w.Write(jsonRes)
-		return
-	}
 }
 
 type RegisterLoginRequest struct {
@@ -263,22 +222,19 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 			log.Println("cant add user")
 			w.WriteHeader(500)
 		}
-		//fmt.Println(id)
-		r.Header.Set("id", string(id))
-		//cookieToken, err := r.Cookie("token")
-		//a := cookieToken.Value
+		fmt.Println(id)
 	}
 }
 
-type User struct {
-	Login    string
-	Password string
-}
+//type User struct {
+//	Login    string
+//	Password string
+//}
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		w.Header().Set("Content-Type", "application/json")
-		var u User
+		var u RegisterLoginRequest
 		json.NewDecoder(r.Body).Decode(&u)
 		login := u.Login
 		password := u.Password

@@ -20,44 +20,6 @@ type Expression struct {
 	Result     float64
 }
 
-//type SaveExpressions struct {
-//	mu          sync.Mutex
-//	Expressions []Expression
-//}
-//
-//var Expressions = SaveExpressions{
-//	mu:          sync.Mutex{},
-//	Expressions: []Expression{},
-//}
-
-//func (se *SaveExpressions) GetExpressions() []Expression {
-//	se.mu.Lock()
-//	defer se.mu.Unlock()
-//	return se.Expressions
-//}
-//
-//func (se *SaveExpressions) SetResult(id int, res float64) {
-//	se.mu.Lock()
-//	se.Expressions[id].Result = res
-//	se.Expressions[id].Status = "complited"
-//	se.mu.Unlock()
-//}
-//func (se *SaveExpressions) AddExpression(ex Expression) {
-//	se.mu.Lock()
-//	se.Expressions = append(se.Expressions, ex)
-//	se.mu.Unlock()
-//}
-//func (se *SaveExpressions) GetExpressionById(id int) (Expression, error) {
-//	se.mu.Lock()
-//	defer se.mu.Unlock()
-//	for _, ex := range se.Expressions {
-//		if ex.Id == id {
-//			return ex, nil
-//		}
-//	}
-//	return Expression{}, fmt.Errorf("not found")
-//}
-
 type Task struct {
 	Id        int32
 	Arg1      float64
@@ -342,13 +304,13 @@ func ComparePassword(hashedPass, pass string) error {
 	return nil
 }
 
-var secretKey = []byte("secret-key")
+var secretKey = []byte("very-secret-key")
 
 func CreateToken(userID string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
-			"userID": userID,
-			"exp":    time.Now().Add(time.Hour * 24).Unix(),
+			"sub": userID,
+			"exp": time.Now().Add(time.Minute * 1).Unix(),
 		})
 
 	tokenString, err := token.SignedString(secretKey)
@@ -358,7 +320,9 @@ func CreateToken(userID string) (string, error) {
 
 	return tokenString, nil
 }
+
 func VerifyToken(tokenString string) error {
+
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return secretKey, nil
 	})
@@ -368,84 +332,15 @@ func VerifyToken(tokenString string) error {
 	if !token.Valid {
 		return fmt.Errorf("invalid token")
 	}
-
 	return nil
 }
-
-//const hmacSampleSecret = "super_secret_signature"
-//
-//func GengerateJWT(id string) (string, string) {
-//	now := time.Now()
-//	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-//		"id":  id,
-//		"nbf": now.Unix(),
-//		"exp": now.Add(24 * time.Hour).Unix(),
-//		"iat": now.Unix(),
-//	})
-//	refresh_token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-//		"name": id,
-//		"nbf":  now.Unix(),
-//		"exp":  now.Add(240 * time.Hour).Unix(),
-//		"iat":  now.Unix(),
-//	})
-//	tokenString, err := token.SignedString([]byte(hmacSampleSecret))
-//	refresh_tokenString, err := refresh_token.SignedString([]byte(hmacSampleSecret))
-//	if err != nil {
-//		panic(err)
-//	}
-//	//fmt.Println(tokenString)
-//	// return  c.JSON(LoginResponse{AccessToken: refresh_tokenString})
-//	return tokenString, refresh_tokenString
-//}
-
-//type User struct {
-//	ID             int64
-//	Login          string
-//	Password       string
-//	OriginPassword string
-//}
-
-//func ValidateToken(tokenString string) string {
-//	tokenFromString, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-//		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-//			panic(fmt.Errorf("unexpected signing method: %v", token.Header["alg"]))
-//		}
-//		return []byte(hmacSampleSecret), nil
-//	})
-//
-//	if err != nil {
-//		return ""
-//	}
-//	//return true
-//	if claims, ok := tokenFromString.Claims.(jwt.MapClaims); ok {
-//		return claims["user"]
-//	} else {
-//		return false
-//	}
-//}
-
-/*
--- Таблица пользователей
-CREATE TABLE IF NOT EXISTS user (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    login TEXT NOT NULL UNIQUE,
-    password TEXT NOT NULL,
-    expression TEXT
-);
-
--- Таблица выражений с статусом вычисления
-CREATE TABLE IF NOT EXISTS expression (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    expression TEXT NOT NULL,
-    answer TEXT,
-    userid INTEGER NOT NULL,
-    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'calculating', 'completed', 'failed')),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (userid) REFERENCES user(id) ON DELETE CASCADE
-);
-
--- Индексы для ускорения запросов
-CREATE INDEX IF NOT EXISTS idx_expression_userid ON expression(userid);
-CREATE INDEX IF NOT EXISTS idx_expression_status ON expression(status);
-*/
+func JwtPayloadsFromToken(tokenString string) (jwt.MapClaims, bool) {
+	token, _ := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return secretKey, nil
+	})
+	payload, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, false
+	}
+	return payload, true
+}

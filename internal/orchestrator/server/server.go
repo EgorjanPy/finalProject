@@ -30,7 +30,6 @@ func New(port string) *Application {
 }
 
 func (s *Server) GetTask(ctx context.Context, in *pb.GetTaskRequest) (*pb.GetTaskResponse, error) {
-	//fmt.Println("GET")
 	id := logic.Results.GetLen()
 	task, err := logic.Tasks.GetTaskById(id)
 	if err != nil {
