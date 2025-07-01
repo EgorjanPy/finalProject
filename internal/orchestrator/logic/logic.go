@@ -2,7 +2,6 @@ package logic
 
 import (
 	"finalProject/internal/storage"
-	"finalProject/internal/storage/sqlite"
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -95,20 +94,18 @@ var Tasks = SaveTasks{
 	Tasks: map[int]Task{},
 }
 
-func NewEx(expression string, userID string) int64 {
-	//id := len(Expressions.Expressions)
-	id, err := storage.DataBase.AddExpression(&sqlite.Expression{UserID: userID, Expression: expression})
-	if err != nil {
-		fmt.Printf("Error %v", err)
-	}
+func NewExpression(id int64, expression, userID string) {
 	Ex := Expression{Id: id, Expression: strings.ReplaceAll(expression, " ", "")}
 	go func(id int64) {
 		res, _ := ParseAndEvaluate(Ex)
 		//Expressions.SetResult(id, res)
-		storage.DataBase.SetResult(int64(id), fmt.Sprint(res))
-		fmt.Println("Expression ", id, " = ", res)
+		err := storage.DataBase.SetResult(int64(id), fmt.Sprint(res))
+		if err != nil {
+			log.Fatalf("error %v")
+		}
+		fmt.Printf("Expression %d = %f", id, res)
+		fmt.Println()
 	}(id)
-	return id
 }
 func ParseAndEvaluate(expression Expression) (float64, error) {
 	parser := NewParser(expression.Expression)

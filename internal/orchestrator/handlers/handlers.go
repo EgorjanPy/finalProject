@@ -20,19 +20,8 @@ import (
 
 var cfg = config.MustLoad()
 
-type ExpressionsResponse struct {
-	Expressions []sqlite.Expression
-}
-
 func isSign(value rune) bool {
 	return value == '+' || value == '-' || value == '*' || value == '/'
-}
-
-type CalculateRequest struct {
-	Expression string `json:"expression"`
-}
-type CalculateResponse struct {
-	Id int64 `json:"id"`
 }
 
 func isValidExpression(expression string) bool {
@@ -98,6 +87,14 @@ func GetUserID(r *http.Request) (string, bool) {
 	}
 	return userID, true
 }
+
+type CalculateRequest struct {
+	Expression string `json:"expression"`
+}
+type CalculateResponse struct {
+	Id int64 `json:"id"`
+}
+
 func CalculateHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -120,7 +117,9 @@ func CalculateHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("cant get userID from claims")
 		w.WriteHeader(401)
 	}
-	id := logic.NewEx(request.Expression, userID)
+	id, err := storage.DataBase.AddExpression(&sqlite.Expression{UserID: userID, Expression: request.Expression})
+	logic.NewExpression(id, request.Expression, userID)
+
 	response := CalculateResponse{Id: id}
 	jsonBytes, err := json.Marshal(response)
 	if err != nil {
@@ -131,8 +130,8 @@ func CalculateHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonBytes)
 }
 
-type GetExpressionResponse struct {
-	Expression sqlite.Expression
+type ExpressionsResponse struct {
+	Expressions []sqlite.Expression
 }
 
 func ExpressionsHandler(w http.ResponseWriter, r *http.Request) {
@@ -156,6 +155,11 @@ func ExpressionsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Write(jsonBytes)
 }
+
+type GetExpressionResponse struct {
+	Expression sqlite.Expression
+}
+
 func GetExpressionByIdHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	strId := vars["id"]
@@ -225,12 +229,6 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(id)
 	}
 }
-
-//type User struct {
-//	Login    string
-//	Password string
-//}
-
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		w.Header().Set("Content-Type", "application/json")

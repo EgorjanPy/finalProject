@@ -63,7 +63,7 @@ func (c *calcServiceClient) SetTask(ctx context.Context, in *SetTaskRequest, opt
 	return out, nil
 }
 
-// CalcServiceServer is the server API for CalcService service.
+// CalcServiceServer is the orchestrator API for CalcService service.
 // All implementations must embed UnimplementedCalcServiceServer
 // for forward compatibility.
 type CalcServiceServer interface {

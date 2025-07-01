@@ -35,7 +35,7 @@ func (a *Application) StartAgent() {
 
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Println("could not connect to grpc server: ", err)
+		log.Println("could not connect to grpc orchestrator: ", err)
 		return
 	}
 	//defer conn.Close()
@@ -54,7 +54,6 @@ func (a *Application) StartAgent() {
 				time.Sleep(time.Second * 2) // Пауза перед повторной попыткой
 				continue
 			}
-
 			var res float32
 			switch task.Operation {
 			case "+":

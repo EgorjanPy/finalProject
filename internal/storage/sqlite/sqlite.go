@@ -138,6 +138,24 @@ func (s *Storage) GetExpressions(id int64) ([]Expression, error) {
 	}
 	return expressions, nil
 }
+func (s *Storage) GetUncompletedExpressions() ([]Expression, error) {
+	expressions := []Expression{}
+	var q = "SELECT * FROM expressions WHERE answer IS NULL"
+	rows, err := s.db.Query(q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		e := Expression{}
+		err := rows.Scan(&e.ID, &e.Expression, &e.UserID, &e.Answer, &e.Status)
+		if err != nil {
+			return nil, err
+		}
+		expressions = append(expressions, e)
+	}
+	return expressions, nil
+}
 func (s *Storage) GetExpressionById(ex_id int64, user_id int64) (Expression, error) {
 	var q = "SELECT expression, answer, status FROM expressions WHERE id = $1 AND user_id = $2"
 	ex := Expression{
@@ -150,6 +168,7 @@ func (s *Storage) GetExpressionById(ex_id int64, user_id int64) (Expression, err
 	}
 	return ex, nil
 }
+
 func (s *Storage) UpdateUserPassword(id int64, pass string) error {
 	var q = "UPDATE users SET password = $1 WHERE id = $2"
 	_, err := s.db.Exec(q, pass, id)
@@ -181,10 +200,3 @@ func (s *Storage) GetUser(login string) (User, error) {
 	err = s.db.QueryRow(q, login).Scan(&user.ID, &user.Login, &user.Password)
 	return user, err
 }
-
-// Insert user +
-// Update password +
-
-// Insert expression +
-// Get expressions +
-// Все функции из logic ?!
