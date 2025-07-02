@@ -72,10 +72,12 @@ func areParenthesesBalanced(expression string) bool {
 	return len(stack) == 0
 }
 func GetUserID(r *http.Request) (string, bool) {
-	token := r.Header.Get("Authorization")
-	tokenString := token[len("Bearer "):]
+	token, err := r.Cookie("jwtToken")
+	if err != nil {
+		log.Printf("autorixation error %v", err)
+	}
+	tokenString := token.String()[9:]
 	jwtPayload, ok := logic.JwtPayloadsFromToken(tokenString)
-
 	if !ok {
 		log.Println("invalid token claims")
 		return "", false
@@ -262,6 +264,14 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("No username found"))
 			return
 		}
+		http.SetCookie(w, &http.Cookie{
+			Name:     "jwtToken",
+			Value:    tokenString,
+			Path:     "/",
+			HttpOnly: true,                    // Защита от доступа через JavaScript
+			Secure:   true,                    // Отправка только по HTTPS
+			SameSite: http.SameSiteStrictMode, // Защита от CSRF атак
+		})
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, tokenString)
 		return

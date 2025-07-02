@@ -72,7 +72,6 @@ func (a *Application) RunServer() (error, error) {
 	r.HandleFunc("/api/v1/register", handlers.RegisterHandler)
 	r.HandleFunc("/api/v1/login", handlers.LoginHandler)
 	http.Handle("/", r)
-	log.Println()
 	// Проверка есть ли нерешенные выражения в бд, если да, то решаем их
 	expressions, err := storage.DataBase.GetUncompletedExpressions()
 	if err != nil {
