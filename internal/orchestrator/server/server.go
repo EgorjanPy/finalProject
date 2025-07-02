@@ -75,7 +75,6 @@ func (a *Application) RunServer() (error, error) {
 	log.Println()
 	// Проверка есть ли нерешенные выражения в бд, если да, то решаем их
 	expressions, err := storage.DataBase.GetUncompletedExpressions()
-	fmt.Println(expressions)
 	if err != nil {
 		log.Println("cant get uncompleted expressions from database")
 	} else {
