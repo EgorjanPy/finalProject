@@ -6,7 +6,6 @@ import (
 	"finalProject/internal/orchestrator/logic"
 	"finalProject/internal/storage"
 	"finalProject/internal/storage/sqlite"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -196,73 +195,74 @@ type RegisterLoginRequest struct {
 }
 
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
+	op := "handlers.RegisterHandler"
 	if r.Method == http.MethodPost {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			log.Println("cant read body :(")
-			w.WriteHeader(500)
+			Response(w, http.StatusBadRequest, "bad request")
 			return
 		}
-
 		defer r.Body.Close()
 		var request RegisterLoginRequest
 		err = json.Unmarshal(body, &request)
 		if err != nil {
-			log.Println("cant unmarsahl body, %v", err)
-			w.WriteHeader(500)
+			Response(w, http.StatusBadRequest, "bad request")
+			return
 		}
 		login := request.Login
 		password := request.Password
-		// Проверка на существование пользователя с данным логином
+
 		if ok, _ := storage.DataBase.UserExists(login); ok {
-			log.Println("юзер с данным логином уже существует")
-			w.WriteHeader(500)
+			Response(w, http.StatusUnauthorized, "user already exists")
+			return
 		}
 		hashedPass, err := logic.Generate(password)
 		if err != nil {
-			log.Println("cant hashing pass")
-			w.WriteHeader(500)
+			Response(w, http.StatusInternalServerError, "cant generate jwt token")
+			log.Fatalf("%s error: %v", op, err)
 		}
-		id, err := storage.DataBase.AddUser(login, hashedPass)
+		_, err = storage.DataBase.AddUser(login, hashedPass)
 		if err != nil {
-			log.Println("cant add user")
-			w.WriteHeader(500)
+			Response(w, http.StatusInternalServerError, "cant add user")
+			log.Fatalf("%s error: %v", op, err)
 		}
-		fmt.Println(id)
+	} else {
+		Response(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
 	}
 }
+
+type LoginRegisterResponse struct {
+	StatusCode uint
+	Message    string `json:"message"`
+}
+
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
+		op := "handlers.LoginHandler"
 		w.Header().Set("Content-Type", "application/json")
 		var u RegisterLoginRequest
 		json.NewDecoder(r.Body).Decode(&u)
 		login := u.Login
 		password := u.Password
 		if ok, _ := storage.DataBase.UserExists(login); !ok {
-			log.Println("Пользователя с данным логином не существует")
-			w.WriteHeader(500)
-			w.Write([]byte("Пользователя с данным логином не существует"))
+			Response(w, http.StatusUnauthorized, "user not found")
 			return
 		}
 		userFromDB, err := storage.DataBase.GetUser(login)
 		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte("Пользователя с данным логином не существует"))
-			return
+			w.WriteHeader(500)
+			log.Fatalf("%s Error: %v", op, err)
 		}
 		err = logic.ComparePassword(userFromDB.Password, password)
 		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
-			log.Println("Неверный пароль")
-			w.Write([]byte("Неверный пароль"))
+			Response(w, http.StatusUnauthorized, "wrong password")
 			return
 		}
 		tokenString, err := logic.CreateToken(userFromDB.ID)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			log.Println("No username found")
-			w.Write([]byte("No username found"))
-			return
+			w.WriteHeader(500)
+			log.Fatalf("%s error: %v", op, err)
 		}
 		http.SetCookie(w, &http.Cookie{
 			Name:     "jwtToken",
@@ -272,11 +272,23 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			Secure:   true,                    // Отправка только по HTTPS
 			SameSite: http.SameSiteStrictMode, // Защита от CSRF атак
 		})
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, tokenString)
+		Response(w, http.StatusOK, "auth success")
 		return
 	} else {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		Response(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
+	}
+}
+func Response(w http.ResponseWriter, status uint, text string) {
+	resp := LoginRegisterResponse{StatusCode: status, Message: text}
+	jsonResponse, err := json.Marshal(resp)
+	if err != nil {
+		w.WriteHeader(500)
+		log.Fatalf("error: %v", err)
+	}
+	_, err = w.Write(jsonResponse)
+	if err != nil {
+		w.WriteHeader(500)
+		log.Fatalf("error: %v", err)
 	}
 }

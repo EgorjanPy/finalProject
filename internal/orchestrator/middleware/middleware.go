@@ -24,8 +24,7 @@ func ProtectedHandler(next http.HandlerFunc) http.HandlerFunc {
 		token, err := r.Cookie("jwtToken")
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
-			log.Printf("autorixation error %v", err)
-
+			log.Printf("autorization error %v", err)
 		}
 		tokenString := token.String()[9:]
 		err = logic.VerifyToken(tokenString)

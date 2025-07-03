@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход в систему</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        .login-form {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            width: 300px;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .error-message {
+            color: red;
+            font-size: 14px;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<div class="login-form">
+    <h2>Вход в аккаунт</h2>
+    <form id="loginForm">
+        <div class="form-group">
+            <label for="username">Логин:</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Пароль:</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit" id="loginButton">Войти</button>
+        <div id="errorMessage" class="error-message"></div>
+    </form>
+</div>
+
+<script>
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        // Получаем значения полей
+        const login = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+        const loginButton = document.getElementById('loginButton');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // Сбрасываем сообщение об ошибке
+        errorMessage.style.display = 'none';
+
+        // Блокируем кнопку во время запроса
+        loginButton.disabled = true;
+        loginButton.textContent = 'Вход...';
+
+        try {
+            // Отправляем запрос на API
+            const response = await fetch('http://localhost:8080/api/v1/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    login: login,
+                    password: password
+                }),
+            });
+
+            const data = await response.json();
+            console.log(data)
+            if (data.StatusCode === 200) {
+                // Успешный вход
+                console.log('Успешный вход:', data.Message);
+
+                // Здесь можно:
+                // 1. Сохранить токен (если он есть в ответе)
+                // 2. Перенаправить пользователя
+                window.location.href = '/';
+
+            } else {
+                // Обработка ошибок
+                errorMessage.textContent = data.message || 'Ошибка входа';
+                errorMessage.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Ошибка:', error);
+            errorMessage.textContent = 'Ошибка соединения с сервером';
+            errorMessage.style.display = 'block';
+        } finally {
+            // Разблокируем кнопку
+            loginButton.disabled = false;
+            loginButton.textContent = 'Войти';
+        }
+    });
+</script>
+</body>
+</html>

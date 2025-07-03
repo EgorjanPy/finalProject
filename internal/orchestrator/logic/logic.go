@@ -293,11 +293,8 @@ func Compare(hash string, s string) error {
 func ComparePassword(hashedPass, pass string) error {
 	err := Compare(hashedPass, pass)
 	if err != nil {
-		log.Println("auth fail")
 		return err
 	}
-
-	log.Println("auth success")
 	return nil
 }
 

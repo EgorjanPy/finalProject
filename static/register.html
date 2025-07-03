@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        .register-form {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            width: 300px;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #3367d6;
+        }
+        .login-link {
+            text-align: center;
+            margin-top: 15px;
+        }
+        .login-link a {
+            color: #4285f4;
+            text-decoration: none;
+        }
+        .error-message {
+            color: red;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+<div class="register-form">
+    <h2>Регистрация</h2>
+    <form id="registerForm">
+        <div class="form-group">
+            <label for="username">Логин:</label>
+            <input type="text" id="username" name="username" required>
+            <div id="usernameError" class="error-message"></div>
+        </div>
+        <div class="form-group">
+            <label for="password">Пароль:</label>
+            <input type="password" id="password" name="password" required>
+            <div id="passwordError" class="error-message"></div>
+        </div>
+        <div class="form-group">
+            <label for="confirmPassword">Повторите пароль:</label>
+            <input type="password" id="confirmPassword" name="confirmPassword" required>
+            <div id="confirmError" class="error-message"></div>
+        </div>
+        <button type="submit" id="submitBtn">Зарегистрироваться</button>
+    </form>
+    <div class="login-link">
+        Уже есть аккаунт? <a href="/login">Войти</a>
+    </div>
+</div>
+
+<script>
+    document.getElementById('registerForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        // Получаем элементы DOM
+        const login = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const submitBtn = document.getElementById('submitBtn');
+
+        // Сбрасываем сообщения об ошибках
+        document.getElementById('usernameError').textContent = '';
+        document.getElementById('passwordError').textContent = '';
+        document.getElementById('confirmError').textContent = '';
+
+        // Валидация
+        let isValid = true;
+
+        if (login.length < 4) {
+            document.getElementById('usernameError').textContent = 'Логин должен содержать минимум 4 символа';
+            isValid = false;
+        }
+
+        if (password.length < 6) {
+            document.getElementById('passwordError').textContent = 'Пароль должен содержать минимум 6 символов';
+            isValid = false;
+        }
+
+        if (password !== confirmPassword) {
+            document.getElementById('confirmError').textContent = 'Пароли не совпадают';
+            isValid = false;
+        }
+
+        if (!isValid) return;
+
+        // Блокируем кнопку во время запроса
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Регистрация...';
+
+        try {
+            // Отправляем запрос на API
+            const response = await fetch('http://localhost:8080/api/v1/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    login: login,
+                    password: password
+                }),
+            });
+
+            // const data = await response.json();
+            //
+            // if (response.ok) {
+            //     // Успешная регистрация
+            //     alert('Регистрация прошла успешно!');
+            //     // Перенаправляем на страницу входа
+            //     window.location.href = '/login';
+            // } else {
+            //     // Обработка ошибок от сервера
+            //     const errorField = data.field || 'usernameError';
+            //     document.getElementById(errorField).textContent = data.message || 'Ошибка регистрации';
+            // }
+        } catch (error) {
+            console.error('Ошибка:', error);
+            document.getElementById('usernameError').textContent = 'Ошибка соединения с сервером';
+        } finally {
+            // Разблокируем кнопку
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Зарегистрироваться';
+        }
+    });
+</script>
+</body>
+</html>
