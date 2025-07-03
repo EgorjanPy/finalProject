@@ -71,10 +71,11 @@ func (a *Application) StartAgent() {
 				time.Sleep(time.Duration(task.OperationTime))
 
 			case "/":
-				if task.Arg2 == 0 {
-					log.Println("division by zero")
-					continue
-				}
+				//if task.Arg2 == 0 {
+				//	res = 0
+				//	log.Println("division by zero")
+				//	break
+				//}
 				res = task.Arg1 / task.Arg2
 				log.Printf("%d %f / %f = %f", task.Id, task.Arg1, task.Arg2, res)
 				time.Sleep(time.Duration(task.OperationTime))

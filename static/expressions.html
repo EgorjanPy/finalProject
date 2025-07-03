@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мои выражения</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .status-pending {
+            color: #ffc107;
+        }
+        .status-completed {
+            color: #28a745;
+        }
+        .status-error {
+            color: #dc3545;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+            color: #6c757d;
+        }
+        .error {
+            color: #dc3545;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Мои выражения</h1>
+    <div id="loading" class="loading">Загрузка данных...</div>
+    <div id="error" class="error" style="display: none;"></div>
+    <table id="expressionsTable" style="display: none;">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Выражение</th>
+            <th>Результат</th>
+            <th>Статус</th>
+        </tr>
+        </thead>
+        <tbody id="expressionsBody">
+        <!-- Данные будут загружены через JavaScript -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async function() {
+        const loadingElement = document.getElementById('loading');
+        const errorElement = document.getElementById('error');
+        const tableElement = document.getElementById('expressionsTable');
+        const tbodyElement = document.getElementById('expressionsBody');
+
+        try {
+            // Получаем данные с сервера
+            const response = await fetch('http://localhost:8080/api/v1/expressions', {
+                // headers: {
+                //     'Authorization': 'Bearer ' + localStorage.getItem('jwtToken')
+                // }
+            });
+
+            if (!response.ok) {
+                throw new Error('Ошибка загрузки данных');
+            }
+
+            const data = await response.json();
+
+            if (data.Expressions && data.Expressions.length > 0) {
+                // Заполняем таблицу данными
+                data.Expressions.forEach(expr => {
+                    const row = document.createElement('tr');
+
+                    // ID
+                    const idCell = document.createElement('td');
+                    idCell.textContent = expr.ID;
+                    row.appendChild(idCell);
+
+                    // Выражение
+                    const exprCell = document.createElement('td');
+                    exprCell.textContent = expr.Expression;
+                    row.appendChild(exprCell);
+
+                    // Ответ
+                    const answerCell = document.createElement('td');
+                    answerCell.textContent = expr.Answer.Valid ? expr.Answer.String : '—';
+                    row.appendChild(answerCell);
+
+                    // Статус
+                    const statusCell = document.createElement('td');
+                    statusCell.textContent = expr.Status;
+                    statusCell.classList.add(`status-${expr.Status.toLowerCase()}`);
+                    row.appendChild(statusCell);
+
+                    tbodyElement.appendChild(row);
+                });
+
+                // Показываем таблицу
+                loadingElement.style.display = 'none';
+                tableElement.style.display = 'table';
+            } else {
+                loadingElement.textContent = 'Нет сохраненных выражений';
+            }
+        } catch (error) {
+            console.error('Ошибка:', error);
+            loadingElement.style.display = 'none';
+            errorElement.textContent = error.message;
+            errorElement.style.display = 'block';
+        }
+    });
+</script>
+</body>
+</html>

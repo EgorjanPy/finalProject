@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"finalProject/internal/config"
 	"finalProject/internal/orchestrator/logic"
 	"finalProject/internal/storage"
 	"finalProject/internal/storage/sqlite"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -22,7 +24,10 @@ var cfg = config.MustLoad()
 func isSign(value rune) bool {
 	return value == '+' || value == '-' || value == '*' || value == '/'
 }
-
+func hasDivisionByZero(expression string) bool {
+	re := regexp.MustCompile(`\/0(\.0*)?([^0-9]|$)`)
+	return re.MatchString(expression)
+}
 func isValidExpression(expression string) bool {
 	cleanedExpression := removeSpaces(expression)
 	validPattern := `^[0-9+\-*/()]+$`
@@ -36,15 +41,7 @@ func isValidExpression(expression string) bool {
 	if strings.Contains("+=-/*:", string(expression[0])) || strings.Contains("+=-/*:", string(expression[len(expression)-1])) {
 		return false
 	}
-	for i := 1; i < len(expression)-1; i++ {
-		if rune(expression[i-1]) == '/' && rune(expression[i-1]) == '0' {
-			return false
-		}
-		if isSign(rune(expression[i-1])) && isSign(rune(expression[i])) {
-			return false
-		}
-	}
-	return true
+	return !hasDivisionByZero(cleanedExpression)
 }
 func removeSpaces(s string) string {
 	var result []rune
@@ -70,23 +67,21 @@ func areParenthesesBalanced(expression string) bool {
 	}
 	return len(stack) == 0
 }
-func GetUserID(r *http.Request) (string, bool) {
+func GetUserID(r *http.Request) (string, error) {
 	token, err := r.Cookie("jwtToken")
 	if err != nil {
-		log.Printf("autorixation error %v", err)
+		return "", errors.New("error: cookie not found")
 	}
 	tokenString := token.String()[9:]
 	jwtPayload, ok := logic.JwtPayloadsFromToken(tokenString)
 	if !ok {
-		log.Println("invalid token claims")
-		return "", false
+		return "", errors.New("error: invalid token claims")
 	}
 	userID, ok := jwtPayload["sub"].(string)
 	if !ok {
-		log.Println("cant find sub from claims")
-		return "", false
+		return "", errors.New("error: cant find sub from claims")
 	}
-	return userID, true
+	return userID, nil
 }
 
 type CalculateRequest struct {
@@ -97,38 +92,34 @@ type CalculateResponse struct {
 }
 
 func CalculateHandler(w http.ResponseWriter, r *http.Request) {
+	const op = "handlers.CalculateHandlers"
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Println("cant read body :(")
-		w.WriteHeader(500)
+		Response(w, http.StatusBadRequest, "bad request")
+		log.Fatalf("%s error: %v", op, err)
 	}
 	defer r.Body.Close()
+
 	var request CalculateRequest
+
 	err = json.Unmarshal(body, &request)
 	if err != nil {
-		log.Println("cant unmarsahl body :(")
-		w.WriteHeader(500)
+		Response(w, http.StatusBadRequest, "bad request")
+		log.Fatalf("%s error: %v", op, err)
 	}
 	if !isValidExpression(request.Expression) {
-		w.WriteHeader(422)
+		Response(w, http.StatusBadRequest, "wrong expression")
 		return
 	}
-	userID, ok := GetUserID(r)
-	if !ok {
-		log.Println("cant get userID from claims")
-		w.WriteHeader(401)
+	userID, err := GetUserID(r)
+	if err != nil {
+		Response(w, http.StatusUnauthorized, "wrong jwt token")
+		return
 	}
 	id, err := storage.DataBase.AddExpression(&sqlite.Expression{UserID: userID, Expression: request.Expression})
 	logic.NewExpression(id, request.Expression, userID)
-
-	response := CalculateResponse{Id: id}
-	jsonBytes, err := json.Marshal(response)
-	if err != nil {
-		log.Println("cant marsahl response :(")
-		w.WriteHeader(500)
-	}
-	w.WriteHeader(201)
-	w.Write(jsonBytes)
+	Response(w, http.StatusOK, fmt.Sprintf("Expression %d was added", id))
+	return
 }
 
 type ExpressionsResponse struct {
@@ -136,23 +127,23 @@ type ExpressionsResponse struct {
 }
 
 func ExpressionsHandler(w http.ResponseWriter, r *http.Request) {
-	userID, ok := GetUserID(r)
-	if !ok {
-		log.Println("cant get userID from claims")
-		w.WriteHeader(401)
+	op := "handlers.ExpressionsHandler"
+	userID, err := GetUserID(r)
+	if err != nil {
+		Response(w, http.StatusUnauthorized, "wrong jwt token")
+		return
 	}
 	intUserID, _ := strconv.Atoi(userID)
 	expressions, err := storage.DataBase.GetExpressions(int64(intUserID))
 	if err != nil {
-		log.Printf("error %v", err)
-
+		Response(w, http.StatusInternalServerError, "cant get expressions")
+		return
 	}
 	response := ExpressionsResponse{Expressions: expressions}
 	jsonBytes, err := json.Marshal(response)
 	if err != nil {
-		log.Println("cant marsahl response :(")
-		w.WriteHeader(500)
-		return
+		Response(w, http.StatusInternalServerError, "cant marshal answer")
+		log.Fatalf("%s error: %v", op, err)
 	}
 	w.Write(jsonBytes)
 }
@@ -169,10 +160,10 @@ func GetExpressionByIdHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		return
 	}
-	userID, ok := GetUserID(r)
-	if !ok {
-		log.Println("cant get userID from claims")
-		w.WriteHeader(401)
+	userID, err := GetUserID(r)
+	if err != nil {
+		Response(w, http.StatusUnauthorized, "wrong jwt token")
+		return
 	}
 	intUserID, _ := strconv.Atoi(userID)
 	ex, err := storage.DataBase.GetExpressionById(int64(id), int64(intUserID))

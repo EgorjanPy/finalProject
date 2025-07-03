@@ -68,6 +68,7 @@ func (a *Application) RunServer() (error, error) {
 	r := mux.NewRouter()
 
 	// API
+
 	r.HandleFunc("/api/v1/calculate", middleware.LoggerMiddleware(middleware.ProtectedHandler(handlers.CalculateHandler)))
 	r.HandleFunc("/api/v1/expressions", middleware.LoggerMiddleware(middleware.ProtectedHandler(handlers.ExpressionsHandler)))
 	r.HandleFunc("/api/v1/expressions/{id}", middleware.LoggerMiddleware(middleware.ProtectedHandler(handlers.GetExpressionByIdHandler)))
@@ -77,15 +78,19 @@ func (a *Application) RunServer() (error, error) {
 
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./static/index.html")
+	})
 	r.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./static/register.html")
 	})
 	r.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./static/login.html")
 	})
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./static/index.html")
+	r.HandleFunc("/expressions", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./static/expressions.html")
 	})
+
 	// Проверка есть ли нерешенные выражения в бд, если да, то решаем их
 	expressions, err := storage.DataBase.GetUncompletedExpressions()
 	if err != nil {
