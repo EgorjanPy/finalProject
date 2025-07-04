@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Мои выражения</title>
+    <link rel="shortcut icon" href="static/logo.png" type="image/x-icon" />
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -90,22 +92,29 @@
         const tbodyElement = document.getElementById('expressionsBody');
 
         try {
+            // Анализируем текущий URL
+            const path = window.location.pathname;
+            let apiUrl = 'http://localhost:8080/api/v1/expressions';
+
+            // Проверяем, содержит ли URL /expressions/{id}
+            const idMatch = path.match(/\/expressions\/(\d+)$/);
+            if (idMatch) {
+                const expressionId = idMatch[1];
+                apiUrl += `/${expressionId}`;
+            }
+            console.log(apiUrl)
             // Получаем данные с сервера
-            const response = await fetch('http://localhost:8080/api/v1/expressions', {
-                // headers: {
-                //     'Authorization': 'Bearer ' + localStorage.getItem('jwtToken')
-                // }
-            });
+            const response = await fetch(apiUrl, {});
 
             if (!response.ok) {
                 throw new Error('Ошибка загрузки данных');
             }
 
             const data = await response.json();
-
-            if (data.Expressions && data.Expressions.length > 0) {
-                // Заполняем таблицу данными
-                data.Expressions.forEach(expr => {
+            console.log(data)
+            if (data.expressions && data.expressions.length > 0) {
+                // Заполняем таблицу всеми выражениями
+                data.expressions.forEach(expr => {
                     const row = document.createElement('tr');
 
                     // ID

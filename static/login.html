@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Вход в систему</title>
+    <link rel="shortcut icon" href="static/logo.png" type="image/x-icon" />
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -109,15 +111,9 @@
 
             const data = await response.json();
             console.log(data)
-            if (data.StatusCode === 200) {
-                // Успешный вход
-                console.log('Успешный вход:', data.Message);
-
-                // Здесь можно:
-                // 1. Сохранить токен (если он есть в ответе)
-                // 2. Перенаправить пользователя
+            if (data.status_code === 200) {
+                console.log('Успешный вход:', data.message);
                 window.location.href = '/';
-
             } else {
                 // Обработка ошибок
                 errorMessage.textContent = data.message || 'Ошибка входа';

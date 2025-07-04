@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="static/logo.png" type="image/x-icon" />
     <title>Калькулятор выражений</title>
     <style>
         body {
@@ -105,10 +106,10 @@
             });
 
             const data = await response.json();
-
-            if (response.ok) {
+            console.log(data)
+            if (data.status_code === 200) {
                 // Успешный ответ
-                resultDiv.textContent = `Результат: ${data.result || data.answer || 'Успешно'}`;
+                resultDiv.textContent = `${data.message || 'Успешно'}`;
             } else {
                 // Ошибка от сервера
                 errorDiv.textContent = data.message || 'Ошибка вычисления';

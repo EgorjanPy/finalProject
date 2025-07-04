@@ -138,6 +138,15 @@ func (s *Storage) GetExpressions(id int64) ([]Expression, error) {
 	}
 	return expressions, nil
 }
+func (s *Storage) GetExpressionById(ex_id int64, user_id int64) (Expression, error) {
+	var q = "SELECT * FROM expressions WHERE id = $1 AND user_id = $2"
+	ex := Expression{}
+	err := s.db.QueryRow(q, ex_id, user_id).Scan(&ex.ID, &ex.Expression, &ex.UserID, &ex.Answer, &ex.Status)
+	if err != nil {
+		return Expression{}, err
+	}
+	return ex, nil
+}
 func (s *Storage) GetUncompletedExpressions() ([]Expression, error) {
 	expressions := []Expression{}
 	var q = "SELECT * FROM expressions WHERE answer IS NULL"
@@ -155,18 +164,6 @@ func (s *Storage) GetUncompletedExpressions() ([]Expression, error) {
 		expressions = append(expressions, e)
 	}
 	return expressions, nil
-}
-func (s *Storage) GetExpressionById(ex_id int64, user_id int64) (Expression, error) {
-	var q = "SELECT expression, answer, status FROM expressions WHERE id = $1 AND user_id = $2"
-	ex := Expression{
-		UserID: fmt.Sprint(user_id),
-		ID:     ex_id,
-	}
-	err := s.db.QueryRow(q, ex_id, user_id).Scan(&ex.Expression, &ex.Answer, &ex.Status)
-	if err != nil {
-		return Expression{}, err
-	}
-	return ex, nil
 }
 
 func (s *Storage) UpdateUserPassword(id int64, pass string) error {

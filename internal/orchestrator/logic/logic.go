@@ -53,8 +53,9 @@ func (st *SaveTasks) GetTaskById(id int) (Task, error) {
 }
 
 type SaveResults struct {
-	mu      sync.RWMutex
-	Results map[int]float64
+	mu        sync.RWMutex
+	Results   map[int]float64
+	ErrorTask map[int]bool
 }
 
 func (sr *SaveResults) IsExists(id int) bool {
@@ -65,7 +66,13 @@ func (sr *SaveResults) IsExists(id int) bool {
 	}
 	return false
 }
-func (sr *SaveResults) SetResult(id int, result float64) {
+func (sr *SaveResults) SetResult(id int, result float64, errorTask bool) {
+	if errorTask {
+		sr.mu.Lock()
+		defer sr.mu.Unlock()
+		sr.Results[id] = result
+		return
+	}
 	if Tasks.GetLen() > sr.GetLen() {
 		sr.mu.Lock()
 		defer sr.mu.Unlock()

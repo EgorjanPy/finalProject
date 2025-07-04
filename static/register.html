@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Регистрация</title>
+    <link rel="shortcut icon" href="static/logo.png" type="image/x-icon" />
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -143,19 +145,17 @@
                     password: password
                 }),
             });
-
-            // const data = await response.json();
-            //
-            // if (response.ok) {
-            //     // Успешная регистрация
-            //     alert('Регистрация прошла успешно!');
-            //     // Перенаправляем на страницу входа
-            //     window.location.href = '/login';
-            // } else {
-            //     // Обработка ошибок от сервера
-            //     const errorField = data.field || 'usernameError';
-            //     document.getElementById(errorField).textContent = data.message || 'Ошибка регистрации';
-            // }
+            const data = await response.json();
+            if (data.status_code === 200){
+                // Успешная регистрация
+                alert('Регистрация прошла успешно!');
+                // Перенаправляем на страницу входа
+                window.location.href = '/login';
+            } else {
+                // Обработка ошибок от сервера
+                const errorField = data.field || 'usernameError';
+                document.getElementById(errorField).textContent = data.message || 'Ошибка регистрации';
+            }
         } catch (error) {
             console.error('Ошибка:', error);
             document.getElementById('usernameError').textContent = 'Ошибка соединения с сервером';

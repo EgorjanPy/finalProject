@@ -54,6 +54,7 @@ func (a *Application) StartAgent() {
 				time.Sleep(time.Second * 2) // Пауза перед повторной попыткой
 				continue
 			}
+			errorTask := false
 			var res float32
 			switch task.Operation {
 			case "+":
@@ -71,11 +72,11 @@ func (a *Application) StartAgent() {
 				time.Sleep(time.Duration(task.OperationTime))
 
 			case "/":
-				//if task.Arg2 == 0 {
-				//	res = 0
-				//	log.Println("division by zero")
-				//	break
-				//}
+				if task.Arg2 == 0 {
+					res = 0
+					log.Println("division by zero")
+					errorTask = true
+				}
 				res = task.Arg1 / task.Arg2
 				log.Printf("%d %f / %f = %f", task.Id, task.Arg1, task.Arg2, res)
 				time.Sleep(time.Duration(task.OperationTime))
@@ -84,6 +85,7 @@ func (a *Application) StartAgent() {
 			_, err = grpcClient.SetTask(ctx, &pb.SetTaskRequest{
 				Id:     task.Id,
 				Result: res,
+				Error:  errorTask,
 			})
 			if err != nil {
 				log.Println("failed to set task result: ", err)

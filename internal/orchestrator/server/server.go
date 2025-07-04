@@ -41,6 +41,9 @@ func (s *Server) GetTask(ctx context.Context, in *pb.GetTaskRequest) (*pb.GetTas
 	return &pb.GetTaskResponse{Id: int32(id), Arg1: float32(task.Arg1), Arg2: float32(task.Arg2), Operation: task.Operation}, nil
 }
 func (s *Server) SetTask(ctx context.Context, in *pb.SetTaskRequest) (*pb.SetTaskResponse, error) {
+	if in.Error {
+
+	}
 	logic.Results.SetResult(int(in.Id), float64(in.Result))
 	return &pb.SetTaskResponse{}, nil
 }
@@ -88,6 +91,9 @@ func (a *Application) RunServer() (error, error) {
 		http.ServeFile(w, r, "./static/login.html")
 	})
 	r.HandleFunc("/expressions", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./static/expressions.html")
+	})
+	r.HandleFunc("/expressions/{id}", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./static/expressions.html")
 	})
 
