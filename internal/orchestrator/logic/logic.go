@@ -66,13 +66,7 @@ func (sr *SaveResults) IsExists(id int) bool {
 	}
 	return false
 }
-func (sr *SaveResults) SetResult(id int, result float64, errorTask bool) {
-	if errorTask {
-		sr.mu.Lock()
-		defer sr.mu.Unlock()
-		sr.Results[id] = result
-		return
-	}
+func (sr *SaveResults) SetResult(id int, result float64) {
 	if Tasks.GetLen() > sr.GetLen() {
 		sr.mu.Lock()
 		defer sr.mu.Unlock()

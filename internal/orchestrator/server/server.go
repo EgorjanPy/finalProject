@@ -42,7 +42,6 @@ func (s *Server) GetTask(ctx context.Context, in *pb.GetTaskRequest) (*pb.GetTas
 }
 func (s *Server) SetTask(ctx context.Context, in *pb.SetTaskRequest) (*pb.SetTaskResponse, error) {
 	if in.Error {
-
 	}
 	logic.Results.SetResult(int(in.Id), float64(in.Result))
 	return &pb.SetTaskResponse{}, nil
