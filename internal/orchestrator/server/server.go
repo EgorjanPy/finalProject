@@ -53,7 +53,6 @@ func (a *Application) RunServer() (error, error) {
 
 	addr := fmt.Sprintf("%s:%s", host, port)
 	lis, err := net.Listen("tcp", addr) // будем ждать запросы по этому адресу
-
 	if err != nil {
 		log.Println("error starting tcp listener: ", err)
 		os.Exit(1)
@@ -78,8 +77,8 @@ func (a *Application) RunServer() (error, error) {
 	r.HandleFunc("/api/v1/login", middleware.LoggerMiddleware(handlers.LoginHandler))
 	http.Handle("/", r)
 
+	// FRONTEND
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
-
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./static/index.html")
 	})

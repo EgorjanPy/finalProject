@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"finalProject/internal/config"
 	"finalProject/internal/storage"
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
@@ -13,6 +14,8 @@ import (
 	"unicode"
 )
 
+var cfg = config.MustLoad()
+
 type Expression struct {
 	Id         int64
 	Expression string
@@ -20,10 +23,11 @@ type Expression struct {
 }
 
 type Task struct {
-	Id        int32
-	Arg1      float64
-	Arg2      float64
-	Operation string
+	Id            int32
+	Arg1          float64
+	Arg2          float64
+	Operation     string
+	OperationTime time.Duration
 }
 type SaveTasks struct {
 	mu    sync.Mutex
@@ -139,7 +143,7 @@ func (b *BinaryOp) Evaluate() float64 {
 	switch b.Op {
 	case "+":
 		var res float64
-		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "+"}
+		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "+", OperationTime: cfg.TimeAddMs}
 		id := Tasks.GetLen()
 
 		// fmt.Println("len, id = ", id)
@@ -159,7 +163,7 @@ func (b *BinaryOp) Evaluate() float64 {
 		return res
 	case "-":
 		var res float64
-		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "-"}
+		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "-", OperationTime: cfg.TimeSubMs}
 		id := len(Tasks.Tasks)
 		// fmt.Println("len, id = ", id)
 		Tasks.AddTask(id, newTask)
@@ -177,7 +181,7 @@ func (b *BinaryOp) Evaluate() float64 {
 		return res
 	case "*":
 		var res float64
-		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "*"}
+		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "*", OperationTime: cfg.TimeMulMs}
 		id := len(Tasks.Tasks)
 		// fmt.Println("len, id = ", id)
 		Tasks.AddTask(id, newTask)
@@ -195,7 +199,7 @@ func (b *BinaryOp) Evaluate() float64 {
 		return res
 	case "/":
 		var res float64
-		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "/"}
+		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "/", OperationTime: cfg.TimeDivMs}
 		id := len(Tasks.Tasks)
 		// fmt.Println("len, id = ", id)
 		Tasks.AddTask(id, newTask)
@@ -299,7 +303,7 @@ func ComparePassword(hashedPass, pass string) error {
 	return nil
 }
 
-var secretKey = []byte("very-secret-key")
+var secretKey = []byte(cfg.Secret)
 
 func CreateToken(userID string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
