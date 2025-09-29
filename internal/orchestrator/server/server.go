@@ -8,12 +8,13 @@ import (
 	"finalProject/internal/storage"
 	pb "finalProject/proto"
 	"fmt"
-	"github.com/gorilla/mux"
-	"google.golang.org/grpc"
 	"log"
 	"net"
 	"net/http"
 	"os"
+
+	"github.com/gorilla/mux"
+	"google.golang.org/grpc"
 )
 
 type Application struct {
@@ -79,22 +80,12 @@ func (a *Application) RunServer() (error, error) {
 
 	// FRONTEND
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./static/index.html")
-	})
-	r.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./static/register.html")
-	})
-	r.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./static/login.html")
-	})
-	r.HandleFunc("/expressions", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./static/expressions.html")
-	})
-	r.HandleFunc("/expressions/{id}", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./static/expressions.html")
-	})
+	r.HandleFunc("/", middleware.LoggerMiddleware(func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "./static/index.html") }))
+	r.HandleFunc("/expressions", middleware.LoggerMiddleware(func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "./static/expressions.html") }))
+	r.HandleFunc("/expressions/{id}", middleware.LoggerMiddleware(func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "./static/expressions.html") }))
 
+	r.HandleFunc("/register", middleware.LoggerMiddleware(func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "./static/register.html") }))
+	r.HandleFunc("/login", middleware.LoggerMiddleware(func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "./static/login.html") }))
 	// Проверка есть ли нерешенные выражения в бд, если да, то решаем их
 	expressions, err := storage.DataBase.GetUncompletedExpressions()
 	if err != nil {

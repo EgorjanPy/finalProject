@@ -4,14 +4,15 @@ import (
 	"finalProject/internal/config"
 	"finalProject/internal/storage"
 	"fmt"
-	"github.com/golang-jwt/jwt/v5"
-	"golang.org/x/crypto/bcrypt"
 	"log"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 	"unicode"
+
+	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var cfg = config.MustLoad()
@@ -321,7 +322,6 @@ func CreateToken(userID string) (string, error) {
 }
 
 func VerifyToken(tokenString string) error {
-
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return secretKey, nil
 	})

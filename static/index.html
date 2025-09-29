@@ -110,6 +110,8 @@
             if (data.status_code === 200) {
                 // Успешный ответ
                 resultDiv.textContent = `${data.message || 'Успешно'}`;
+            } else if (data.status_code === 401){
+                window.location.href = '/login';
             } else {
                 // Ошибка от сервера
                 errorDiv.textContent = data.message || 'Ошибка вычисления';

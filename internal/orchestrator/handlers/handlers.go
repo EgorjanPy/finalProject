@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"finalProject/internal/orchestrator/logic"
+	"finalProject/internal/orchestrator/tools"
 	"finalProject/internal/storage"
 	"finalProject/internal/storage/sqlite"
 	"fmt"
@@ -60,22 +61,7 @@ func areParenthesesBalanced(expression string) bool {
 	}
 	return len(stack) == 0
 }
-func GetUserID(r *http.Request) (string, error) {
-	token, err := r.Cookie("jwtToken")
-	if err != nil {
-		return "", errors.New("error: cookie not found")
-	}
-	tokenString := token.String()[9:]
-	jwtPayload, ok := logic.JwtPayloadsFromToken(tokenString)
-	if !ok {
-		return "", errors.New("error: invalid token claims")
-	}
-	userID, ok := jwtPayload["sub"].(string)
-	if !ok {
-		return "", errors.New("error: cant find sub from claims")
-	}
-	return userID, nil
-}
+
 func Response(w http.ResponseWriter, resp any) {
 	jsonResponse, err := json.Marshal(resp)
 	if err != nil {
@@ -96,6 +82,14 @@ type CalculateResponse struct {
 	StatusCode uint   `json:"status_code"`
 	Id         int64  `json:"id"`
 	Message    string `json:"message"`
+}
+
+func GetUserIDFromContext(r *http.Request) (string, error) {
+	userID, ok := r.Context().Value(tools.UserIDKey).(string)
+	if !ok {
+		return "", errors.New("userID not found in context")
+	}
+	return userID, nil
 }
 
 func CalculateHandler(w http.ResponseWriter, r *http.Request) {
@@ -120,20 +114,20 @@ func CalculateHandler(w http.ResponseWriter, r *http.Request) {
 		Response(w, resp)
 		return
 	}
-	userID, err := GetUserID(r)
+	userID, err := GetUserIDFromContext(r)
 	if err != nil {
 		resp := CalculateResponse{StatusCode: http.StatusBadRequest, Id: 0, Message: "wrong jwt token"}
 		Response(w, resp)
 		return
 	}
-	id, err := storage.DataBase.AddExpression(&sqlite.Expression{UserID: userID, Expression: request.Expression})
+	expressionID, err := storage.DataBase.AddExpression(&sqlite.Expression{UserID: userID, Expression: request.Expression})
 	if err != nil {
-		resp := CalculateResponse{http.StatusInternalServerError, id, "cant add expression"}
+		resp := CalculateResponse{http.StatusInternalServerError, expressionID, "cant add expression"}
 		Response(w, resp)
 		log.Fatalf("%s error: %v", op, err)
 	}
-	logic.NewExpression(id, request.Expression, userID)
-	resp := CalculateResponse{http.StatusOK, id, fmt.Sprintf("Expression %d was added", id)}
+	logic.NewExpression(expressionID, request.Expression, userID)
+	resp := CalculateResponse{http.StatusOK, expressionID, fmt.Sprintf("Expression %d was added", expressionID)}
 	Response(w, resp)
 	return
 }
@@ -146,7 +140,7 @@ type ExpressionsResponse struct {
 
 func ExpressionsHandler(w http.ResponseWriter, r *http.Request) {
 	op := "handlers.ExpressionsHandler"
-	userID, err := GetUserID(r)
+	userID, err := GetUserIDFromContext(r)
 	if err != nil {
 		resp := ExpressionsResponse{StatusCode: http.StatusUnauthorized, Expressions: []sqlite.Expression{}, Message: "wrong jwt token"}
 		Response(w, resp)
@@ -171,7 +165,7 @@ func GetExpressionByIdHandler(w http.ResponseWriter, r *http.Request) {
 		Response(w, resp)
 		return
 	}
-	userID, err := GetUserID(r)
+	userID, err := GetUserIDFromContext(r)
 	if err != nil {
 		resp := ExpressionsResponse{StatusCode: http.StatusUnauthorized, Expressions: []sqlite.Expression{}, Message: "wrong jwt token"}
 		Response(w, resp)

@@ -146,6 +146,12 @@ cd ./finalProject/
 ```
 go mod tidy
 ```
+* Установите [mingw](https://jmeubank.github.io/tdm-gcc/)
+* Теперь нужно добавить путь к GCC в переменную окружения PATH 
+```
+    set PATH=yourPath\mingw\bin;%PATH%
+```
+
 ## Запуск
 Чтобы запустить оркестратор, введите команду в терминал
 ```
