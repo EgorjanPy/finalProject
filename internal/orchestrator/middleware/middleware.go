@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"finalProject/internal/orchestrator/handlers"
-	"finalProject/internal/orchestrator/logic"
 	"finalProject/internal/orchestrator/tools"
 
 	"log"
@@ -27,7 +26,7 @@ type middlewareResponse struct {
 }
 
 func GetUserID(token string) (string, error) {
-	jwtPayload, ok := logic.JwtPayloadsFromToken(token)
+	jwtPayload, ok := tools.JwtPayloadsFromToken(token)
 	if !ok {
 		return "", errors.New("invalid token claims")
 	}
@@ -53,7 +52,7 @@ func ProtectedHandler(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		tokenString := token.String()[9:]
-		err = logic.VerifyToken(tokenString)
+		err = tools.VerifyToken(tokenString)
 		if err != nil {
 			message := "invalid token"
 			response := middlewareResponse{Status_code: http.StatusUnauthorized, Message: message}

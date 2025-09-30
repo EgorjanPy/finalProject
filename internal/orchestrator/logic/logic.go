@@ -10,15 +10,10 @@ import (
 	"sync"
 	"time"
 	"unicode"
-
-	"github.com/golang-jwt/jwt/v5"
-	"golang.org/x/crypto/bcrypt"
 )
 
-var cfg = config.MustLoad()
-
 type Expression struct {
-	Id         int64
+	Id         int
 	Expression string
 	Result     float64
 }
@@ -100,12 +95,12 @@ var Tasks = SaveTasks{
 	Tasks: map[int]Task{},
 }
 
-func NewExpression(id int64, expression, userID string) {
+func NewExpression(id int, expression, userID string) {
 	Ex := Expression{Id: id, Expression: strings.ReplaceAll(expression, " ", "")}
-	go func(id int64) {
+	go func(id int) {
 		res, _ := ParseAndEvaluate(Ex)
 		//Expressions.SetResult(id, res)
-		err := storage.DataBase.SetResult(int64(id), fmt.Sprint(res))
+		err := storage.DataBase.SetResult(id, fmt.Sprint(res))
 		if err != nil {
 			log.Fatalf("error %v")
 		}
@@ -144,7 +139,7 @@ func (b *BinaryOp) Evaluate() float64 {
 	switch b.Op {
 	case "+":
 		var res float64
-		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "+", OperationTime: cfg.TimeAddMs}
+		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "+", OperationTime: config.Cfg.TimeAddMs}
 		id := Tasks.GetLen()
 
 		// fmt.Println("len, id = ", id)
@@ -164,7 +159,7 @@ func (b *BinaryOp) Evaluate() float64 {
 		return res
 	case "-":
 		var res float64
-		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "-", OperationTime: cfg.TimeSubMs}
+		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "-", OperationTime: config.Cfg.TimeSubMs}
 		id := len(Tasks.Tasks)
 		// fmt.Println("len, id = ", id)
 		Tasks.AddTask(id, newTask)
@@ -182,7 +177,7 @@ func (b *BinaryOp) Evaluate() float64 {
 		return res
 	case "*":
 		var res float64
-		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "*", OperationTime: cfg.TimeMulMs}
+		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "*", OperationTime: config.Cfg.TimeMulMs}
 		id := len(Tasks.Tasks)
 		// fmt.Println("len, id = ", id)
 		Tasks.AddTask(id, newTask)
@@ -200,7 +195,7 @@ func (b *BinaryOp) Evaluate() float64 {
 		return res
 	case "/":
 		var res float64
-		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "/", OperationTime: cfg.TimeDivMs}
+		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "/", OperationTime: config.Cfg.TimeDivMs}
 		id := len(Tasks.Tasks)
 		// fmt.Println("len, id = ", id)
 		Tasks.AddTask(id, newTask)
@@ -280,66 +275,4 @@ func (p *Parser) ParseFactor() Expr {
 		return expr
 	}
 	return p.parseNumber()
-}
-
-func Generate(s string) (string, error) {
-	saltedBytes := []byte(s)
-	hashedBytes, err := bcrypt.GenerateFromPassword(saltedBytes, bcrypt.DefaultCost)
-	if err != nil {
-		return "", err
-	}
-	hash := string(hashedBytes[:])
-	return hash, nil
-}
-func Compare(hash string, s string) error {
-	incoming := []byte(s)
-	existing := []byte(hash)
-	return bcrypt.CompareHashAndPassword(existing, incoming)
-}
-func ComparePassword(hashedPass, pass string) error {
-	err := Compare(hashedPass, pass)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-var secretKey = []byte(cfg.Secret)
-
-func CreateToken(userID string) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
-		jwt.MapClaims{
-			"sub": userID,
-			"exp": time.Now().Add(time.Hour * 24).Unix(),
-		})
-
-	tokenString, err := token.SignedString(secretKey)
-	if err != nil {
-		return "", err
-	}
-
-	return tokenString, nil
-}
-
-func VerifyToken(tokenString string) error {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return secretKey, nil
-	})
-	if err != nil {
-		return err
-	}
-	if !token.Valid {
-		return fmt.Errorf("invalid token")
-	}
-	return nil
-}
-func JwtPayloadsFromToken(tokenString string) (jwt.MapClaims, bool) {
-	token, _ := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return secretKey, nil
-	})
-	payload, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		return nil, false
-	}
-	return payload, true
 }

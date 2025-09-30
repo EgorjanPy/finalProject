@@ -105,12 +105,14 @@
             console.log(apiUrl)
             // Получаем данные с сервера
             const response = await fetch(apiUrl, {});
-
-            if (!response.ok) {
+            const data = await response.json();
+            if (data.status_code === 401) {
+                window.location.href = '/login';
+                return; // Прерываем выполнение
+            }
+            if (!data.status_code) {
                 throw new Error('Ошибка загрузки данных');
             }
-
-            const data = await response.json();
             console.log(data)
             if (data.expressions && data.expressions.length > 0) {
                 // Заполняем таблицу всеми выражениями

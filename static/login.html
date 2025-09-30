@@ -53,6 +53,14 @@
         button:hover {
             background-color: #45a049;
         }
+        .login-link {
+            text-align: center;
+            margin-top: 15px;
+        }
+        .login-link a {
+            color: #4285f4;
+            text-decoration: none;
+        }
         .error-message {
             color: red;
             font-size: 14px;
@@ -75,6 +83,7 @@
             <input type="password" id="password" name="password" required>
         </div>
         <button type="submit" id="loginButton">Войти</button>
+        <div class="login-link">Нет аккаунта? <a href="/register">Зарегистрироваться</a></div>
         <div id="errorMessage" class="error-message"></div>
     </form>
 </div>

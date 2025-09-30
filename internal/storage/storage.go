@@ -5,5 +5,4 @@ import (
 	"finalProject/internal/storage/sqlite"
 )
 
-var cfg = config.MustLoad()
-var DataBase, _ = sqlite.New(cfg.StoragePath)
+var DataBase, _ = sqlite.New(config.Cfg.StoragePath)

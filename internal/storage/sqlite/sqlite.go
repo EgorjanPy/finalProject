@@ -4,8 +4,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
 	"os"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type Storage struct {
@@ -105,7 +106,7 @@ func (s *Storage) AddUser(login, password string) (int64, error) {
 	return id, nil
 }
 
-func (s *Storage) AddExpression(expression *Expression) (int64, error) {
+func (s *Storage) AddExpression(expression *Expression) (int, error) {
 	var q = `
 	INSERT INTO expressions (expression, user_id) values ($1, $2)
 	`
@@ -118,9 +119,9 @@ func (s *Storage) AddExpression(expression *Expression) (int64, error) {
 		return 0, err
 	}
 
-	return id, nil
+	return int(id), nil
 }
-func (s *Storage) GetExpressions(id int64) ([]Expression, error) {
+func (s *Storage) GetExpressions(id int) ([]Expression, error) {
 	var expressions []Expression
 	var q = `SELECT * FROM expressions WHERE user_id = $1`
 	rows, err := s.db.Query(q, id)
@@ -138,7 +139,7 @@ func (s *Storage) GetExpressions(id int64) ([]Expression, error) {
 	}
 	return expressions, nil
 }
-func (s *Storage) GetExpressionById(ex_id int64, user_id int64) (Expression, error) {
+func (s *Storage) GetExpressionById(ex_id int, user_id int) (Expression, error) {
 	var q = "SELECT * FROM expressions WHERE id = $1 AND user_id = $2"
 	ex := Expression{}
 	err := s.db.QueryRow(q, ex_id, user_id).Scan(&ex.ID, &ex.Expression, &ex.UserID, &ex.Answer, &ex.Status)
@@ -174,7 +175,7 @@ func (s *Storage) UpdateUserPassword(id int64, pass string) error {
 	}
 	return nil
 }
-func (s *Storage) SetResult(id int64, res string) error {
+func (s *Storage) SetResult(id int, res string) error {
 	var q = `
         UPDATE expressions 
         SET answer = $1, 

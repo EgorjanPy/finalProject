@@ -37,3 +37,5 @@ func MustLoad() *Config {
 	}
 	return &cfg
 }
+
+var Cfg = MustLoad()

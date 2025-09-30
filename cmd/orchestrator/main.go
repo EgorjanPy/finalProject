@@ -7,8 +7,7 @@ import (
 )
 
 func main() {
-	cfg := config.MustLoad()
-	app := server.New(cfg.Port)
+	app := server.New(config.Cfg.Port)
 	// app.Run()
 	app.RunServer()
 

@@ -69,30 +69,29 @@ func (a *Application) RunServer() (error, error) {
 	}()
 	r := mux.NewRouter()
 
-	// API
-
-	r.HandleFunc("/api/v1/calculate", middleware.LoggerMiddleware(middleware.ProtectedHandler(handlers.CalculateHandler)))
-	r.HandleFunc("/api/v1/expressions", middleware.LoggerMiddleware(middleware.ProtectedHandler(handlers.ExpressionsHandler)))
-	r.HandleFunc("/api/v1/expressions/{id}", middleware.LoggerMiddleware(middleware.ProtectedHandler(handlers.GetExpressionByIdHandler)))
-	r.HandleFunc("/api/v1/register", middleware.LoggerMiddleware(handlers.RegisterHandler))
-	r.HandleFunc("/api/v1/login", middleware.LoggerMiddleware(handlers.LoginHandler))
-	http.Handle("/", r)
-
 	// FRONTEND
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 	r.HandleFunc("/", middleware.LoggerMiddleware(func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "./static/index.html") }))
 	r.HandleFunc("/expressions", middleware.LoggerMiddleware(func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "./static/expressions.html") }))
 	r.HandleFunc("/expressions/{id}", middleware.LoggerMiddleware(func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "./static/expressions.html") }))
-
 	r.HandleFunc("/register", middleware.LoggerMiddleware(func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "./static/register.html") }))
 	r.HandleFunc("/login", middleware.LoggerMiddleware(func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "./static/login.html") }))
+
+	// API
+	r.HandleFunc("/api/v1/calculate", middleware.LoggerMiddleware(middleware.ProtectedHandler(handlers.CalculateHandler)))
+	r.HandleFunc("/api/v1/expressions", middleware.LoggerMiddleware(middleware.ProtectedHandler(handlers.ExpressionsHandler)))
+	r.HandleFunc("/api/v1/expressions/{expressionID}", middleware.LoggerMiddleware(middleware.ProtectedHandler(handlers.GetExpressionByIdHandler)))
+	r.HandleFunc("/api/v1/register", middleware.LoggerMiddleware(handlers.RegisterHandler))
+	r.HandleFunc("/api/v1/login", middleware.LoggerMiddleware(handlers.LoginHandler))
+	http.Handle("/", r)
+
 	// Проверка есть ли нерешенные выражения в бд, если да, то решаем их
 	expressions, err := storage.DataBase.GetUncompletedExpressions()
 	if err != nil {
 		log.Println("cant get uncompleted expressions from database")
 	} else {
 		for _, ex := range expressions {
-			logic.NewExpression(ex.ID, ex.Expression, ex.UserID)
+			logic.NewExpression(int(ex.ID), ex.Expression, ex.UserID)
 		}
 	}
 

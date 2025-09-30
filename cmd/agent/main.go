@@ -8,8 +8,7 @@ import (
 )
 
 func main() {
-	cfg := config.MustLoad()
-	app := agent.New(cfg.Port, cfg.ComputingPower)
+	app := agent.New(config.Cfg.Port, config.Cfg.ComputingPower)
 	app.StartApp()
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt)

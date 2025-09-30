@@ -19,24 +19,30 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func hasDivisionByZero(expression string) bool {
+func hasDivisionByZero(expression string) error {
 	re := regexp.MustCompile(`\/0(\.0*)?([^0-9]|$)`)
-	return re.MatchString(expression)
+	if re.MatchString(expression) {
+		return errors.New("division by zero")
+	}
+	return nil
 }
-func isValidExpression(expression string) bool {
+func isValidExpression(expression string) error {
 	cleanedExpression := removeSpaces(expression)
 	validPattern := `^[0-9+\-*/()]+$`
 	matched, err := regexp.MatchString(validPattern, cleanedExpression)
 	if err != nil || !matched {
-		return false
+		return errors.New("invalid expression")
 	}
 	if !areParenthesesBalanced(cleanedExpression) {
-		return false
+		return errors.New("wrong parentheses")
 	}
 	if strings.Contains("+=-/*:", string(expression[0])) || strings.Contains("+=-/*:", string(expression[len(expression)-1])) {
-		return false
+		return errors.New("invalid expression")
 	}
-	return !hasDivisionByZero(cleanedExpression)
+	if err := hasDivisionByZero(cleanedExpression); err != nil {
+		return err
+	}
+	return nil
 }
 func removeSpaces(s string) string {
 	var result []rune
@@ -80,106 +86,134 @@ type CalculateRequest struct {
 }
 type CalculateResponse struct {
 	StatusCode uint   `json:"status_code"`
-	Id         int64  `json:"id"`
+	Id         int    `json:"id"`
 	Message    string `json:"message"`
-}
-
-func GetUserIDFromContext(r *http.Request) (string, error) {
-	userID, ok := r.Context().Value(tools.UserIDKey).(string)
-	if !ok {
-		return "", errors.New("userID not found in context")
-	}
-	return userID, nil
 }
 
 func CalculateHandler(w http.ResponseWriter, r *http.Request) {
 	const op = "handlers.CalculateHandlers"
+	userID, err := tools.GetUserIDFromContext(r)
+	if err != nil {
+		message := err.Error()
+		resp := CalculateResponse{StatusCode: http.StatusUnauthorized, Id: 0, Message: message}
+		log.Printf("%s, error: %s", r.URL, message)
+		Response(w, resp)
+		return
+	}
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		resp := CalculateResponse{StatusCode: http.StatusBadRequest, Id: 0, Message: "bad request"}
-		Response(w, resp)
-		log.Fatalf("%s error: %v", op, err)
+		message := "bad request: can't read request body"
+		response := CalculateResponse{StatusCode: http.StatusBadRequest, Id: 0, Message: message}
+		log.Printf("%s, error: %s", r.URL, message)
+		Response(w, response)
+		return
 	}
 	defer r.Body.Close()
 
 	var request CalculateRequest
 	err = json.Unmarshal(body, &request)
 	if err != nil {
-		resp := CalculateResponse{StatusCode: http.StatusBadRequest, Id: 0, Message: "bad request"}
-		Response(w, resp)
+		message := "bad request: can't unmarshal body"
+		response := CalculateResponse{StatusCode: http.StatusBadRequest, Id: 0, Message: message}
+		log.Printf("%s, error: %s", r.URL, message)
+		Response(w, response)
 		return
 	}
-	if !isValidExpression(request.Expression) {
-		resp := CalculateResponse{StatusCode: http.StatusBadRequest, Id: 0, Message: "wrong expression"}
-		Response(w, resp)
-		return
-	}
-	userID, err := GetUserIDFromContext(r)
-	if err != nil {
-		resp := CalculateResponse{StatusCode: http.StatusBadRequest, Id: 0, Message: "wrong jwt token"}
-		Response(w, resp)
+	if err := isValidExpression(request.Expression); err != nil {
+		message := err.Error()
+		response := CalculateResponse{StatusCode: http.StatusBadRequest, Id: 0, Message: message}
+		log.Printf("%s, error: %s", r.URL, message)
+		Response(w, response)
 		return
 	}
 	expressionID, err := storage.DataBase.AddExpression(&sqlite.Expression{UserID: userID, Expression: request.Expression})
 	if err != nil {
-		resp := CalculateResponse{http.StatusInternalServerError, expressionID, "cant add expression"}
-		Response(w, resp)
+		response := CalculateResponse{http.StatusInternalServerError, expressionID, "cant add expression"}
+		Response(w, response)
 		log.Fatalf("%s error: %v", op, err)
 	}
 	logic.NewExpression(expressionID, request.Expression, userID)
-	resp := CalculateResponse{http.StatusOK, expressionID, fmt.Sprintf("Expression %d was added", expressionID)}
-	Response(w, resp)
+	message := fmt.Sprintf("expression %d added", expressionID)
+	response := CalculateResponse{http.StatusOK, expressionID, message}
+	log.Printf("%s, %s", r.URL, message)
+	Response(w, response)
 	return
 }
 
 type ExpressionsResponse struct {
-	StatusCode  uint                `json:"status_code"`
-	Expressions []sqlite.Expression `json:"expressions"`
-	Message     string              `json:"message"`
+	StatusCode  uint                 `json:"status_code"`
+	Expressions *[]sqlite.Expression `json:"expressions,omitempty"`
+	Message     string               `json:"message"`
 }
 
 func ExpressionsHandler(w http.ResponseWriter, r *http.Request) {
 	op := "handlers.ExpressionsHandler"
-	userID, err := GetUserIDFromContext(r)
+	userID, err := tools.GetUserIDFromContext(r)
 	if err != nil {
-		resp := ExpressionsResponse{StatusCode: http.StatusUnauthorized, Expressions: []sqlite.Expression{}, Message: "wrong jwt token"}
-		Response(w, resp)
+		message := err.Error()
+		response := ExpressionsResponse{StatusCode: http.StatusUnauthorized, Expressions: nil, Message: message}
+		log.Printf("%s, error: %s", r.URL, message)
+		Response(w, response)
 		return
 	}
-	intUserID, _ := strconv.Atoi(userID)
-	expressions, err := storage.DataBase.GetExpressions(int64(intUserID))
+	intUserID, err := strconv.Atoi(userID)
 	if err != nil {
-		resp := ExpressionsResponse{StatusCode: http.StatusUnauthorized, Expressions: []sqlite.Expression{}, Message: "cant get expressions"}
+		message := "wrong userID"
+		response := ExpressionsResponse{StatusCode: http.StatusUnauthorized, Expressions: nil, Message: message}
+		log.Printf("%s, error: %s", r.URL, message)
+		Response(w, response)
+		return
+	}
+	expressions, err := storage.DataBase.GetExpressions(intUserID)
+	if err != nil {
+		message := "can't get expressions"
+		resp := ExpressionsResponse{StatusCode: http.StatusBadRequest, Expressions: nil, Message: message}
 		Response(w, resp)
 		log.Fatalf("%s error: %v", op, err)
 	}
-	resp := ExpressionsResponse{StatusCode: http.StatusOK, Expressions: expressions, Message: "success"}
-	Response(w, resp)
+	message := "success"
+	response := ExpressionsResponse{StatusCode: http.StatusOK, Expressions: &expressions, Message: message}
+	log.Printf("%s, %s", r.URL, message)
+	Response(w, response)
 	return
 }
 func GetExpressionByIdHandler(w http.ResponseWriter, r *http.Request) {
-	strId := mux.Vars(r)["id"]
-	id, err := strconv.Atoi(strId)
+	userID, err := tools.GetUserIDFromContext(r)
 	if err != nil {
-		resp := ExpressionsResponse{StatusCode: http.StatusNotFound, Expressions: make([]sqlite.Expression, 0), Message: "wrong id"}
+		message := err.Error()
+		resp := ExpressionsResponse{StatusCode: http.StatusUnauthorized, Expressions: nil, Message: message}
+		log.Printf("%s, error: %s", r.URL, message)
 		Response(w, resp)
 		return
 	}
-	userID, err := GetUserIDFromContext(r)
+	intUserID, err := strconv.Atoi(userID)
 	if err != nil {
-		resp := ExpressionsResponse{StatusCode: http.StatusUnauthorized, Expressions: []sqlite.Expression{}, Message: "wrong jwt token"}
+		message := "wrong userID"
+		response := ExpressionsResponse{StatusCode: http.StatusUnauthorized, Expressions: nil, Message: message}
+		log.Printf("%s, error: %s", r.URL, message)
+		Response(w, response)
+		return
+	}
+	expressionID, err := strconv.Atoi(mux.Vars(r)["expressionID"])
+	if err != nil {
+		message := "wrong expressionID"
+		resp := ExpressionsResponse{StatusCode: http.StatusNotFound, Expressions: nil, Message: message}
+		log.Printf("%s, error: %s", r.URL, message)
 		Response(w, resp)
 		return
 	}
-	intUserID, _ := strconv.Atoi(userID)
-	ex, err := storage.DataBase.GetExpressionById(int64(id), int64(intUserID))
+
+	expression, err := storage.DataBase.GetExpressionById(expressionID, intUserID)
 	if err != nil {
-		resp := ExpressionsResponse{StatusCode: http.StatusNotFound, Expressions: make([]sqlite.Expression, 0), Message: "expression not found"}
+		message := "expression not found"
+		resp := ExpressionsResponse{StatusCode: http.StatusNotFound, Expressions: nil, Message: message}
+		log.Printf("%s, error: %s", r.URL, err)
 		Response(w, resp)
-		log.Println(err)
 		return
 	}
-	resp := ExpressionsResponse{StatusCode: http.StatusOK, Expressions: []sqlite.Expression{ex}, Message: "success"}
+	message := "success"
+	resp := ExpressionsResponse{StatusCode: http.StatusOK, Expressions: &[]sqlite.Expression{expression}, Message: message}
+	log.Printf("%s, %s", r.URL, message)
 	Response(w, resp)
 	return
 }
@@ -196,77 +230,94 @@ type LoginRegisterResponse struct {
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	op := "handlers.RegisterHandler"
 	if r.Method == http.MethodPost {
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			resp := LoginRegisterResponse{StatusCode: http.StatusBadRequest, Message: "bad request"}
-			Response(w, resp)
-			return
-		}
-		defer r.Body.Close()
 		var request RegisterLoginRequest
-		err = json.Unmarshal(body, &request)
+		err := json.NewDecoder(r.Body).Decode(&request)
 		if err != nil {
-			resp := LoginRegisterResponse{StatusCode: http.StatusBadRequest, Message: "bad request"}
-			Response(w, resp)
+			message := "bad request"
+			response := LoginRegisterResponse{StatusCode: http.StatusBadRequest, Message: message}
+			log.Printf("%s, error: %s", r.URL, message)
+			Response(w, response)
 			return
 		}
 		login := request.Login
 		password := request.Password
 
 		if ok, _ := storage.DataBase.UserExists(login); ok {
-			resp := LoginRegisterResponse{StatusCode: http.StatusUnauthorized, Message: "user already exists"}
-			Response(w, resp)
+			message := "user exists"
+			response := LoginRegisterResponse{StatusCode: http.StatusUnauthorized, Message: message}
+			log.Printf("%s, error: %s", r.URL, message)
+			Response(w, response)
 			return
 		}
-		hashedPass, err := logic.Generate(password)
+		hashedPass, err := tools.GeneratePasswordHash(password)
 		if err != nil {
-			resp := LoginRegisterResponse{StatusCode: http.StatusInternalServerError, Message: "cant generate jwt token"}
-			Response(w, resp)
+			message := "can't generate jwt token"
+			response := LoginRegisterResponse{StatusCode: http.StatusInternalServerError, Message: message}
+			Response(w, response)
 			log.Fatalf("%s error: %v", op, err)
 		}
 		_, err = storage.DataBase.AddUser(login, hashedPass)
 		if err != nil {
-			resp := LoginRegisterResponse{http.StatusInternalServerError, "cant add user"}
-			Response(w, resp)
+			message := "cant add user"
+			response := LoginRegisterResponse{http.StatusInternalServerError, message}
+			log.Printf("%s, %s", r.URL, message)
+			Response(w, response)
 			log.Fatalf("%s error: %v", op, err)
 		}
-		resp := LoginRegisterResponse{http.StatusOK, "success"}
-		Response(w, resp)
+		message := "success"
+		response := LoginRegisterResponse{http.StatusOK, message}
+		log.Printf("%s, %s", r.URL, message)
+		Response(w, response)
 		return
 	} else {
-		resp := LoginRegisterResponse{http.StatusMethodNotAllowed, "method not allowed"}
-		Response(w, resp)
+		message := "method not allowed"
+		response := LoginRegisterResponse{http.StatusMethodNotAllowed, message}
+		log.Printf("%s, %s", r.URL, message)
+		Response(w, response)
 		return
 	}
 }
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		op := "handlers.LoginHandler"
-		w.Header().Set("Content-Type", "application/json")
-		var u RegisterLoginRequest
-		json.NewDecoder(r.Body).Decode(&u)
-		login := u.Login
-		password := u.Password
+		//w.Header().Set("Content-Type", "application/json")
+		var request RegisterLoginRequest
+		err := json.NewDecoder(r.Body).Decode(&request)
+		if err != nil {
+			message := "bad request"
+			response := LoginRegisterResponse{StatusCode: http.StatusBadRequest, Message: message}
+			log.Printf("%s, error: %s", r.URL, message)
+			Response(w, response)
+			return
+		}
+		login := request.Login
+		password := request.Password
 		if ok, _ := storage.DataBase.UserExists(login); !ok {
-			resp := LoginRegisterResponse{http.StatusUnauthorized, "user not found"}
+			message := "user not found"
+			resp := LoginRegisterResponse{http.StatusUnauthorized, message}
+			log.Printf("%s, %s", r.URL, message)
 			Response(w, resp)
 			return
 		}
 		userFromDB, err := storage.DataBase.GetUser(login)
 		if err != nil {
-			resp := LoginRegisterResponse{http.StatusInternalServerError, "cant get user"}
+			message := "can't get user"
+			resp := LoginRegisterResponse{http.StatusInternalServerError, message}
 			Response(w, resp)
 			log.Fatalf("%s Error: %v", op, err)
 		}
-		err = logic.ComparePassword(userFromDB.Password, password)
+		err = tools.ComparePassword(userFromDB.Password, password)
 		if err != nil {
-			resp := LoginRegisterResponse{http.StatusUnauthorized, "wrong password"}
+			message := "wrong password"
+			resp := LoginRegisterResponse{http.StatusUnauthorized, message}
+			log.Printf("%s, %s", r.URL, message)
 			Response(w, resp)
 			return
 		}
-		tokenString, err := logic.CreateToken(userFromDB.ID)
+		tokenString, err := tools.CreateToken(userFromDB.ID)
 		if err != nil {
-			resp := LoginRegisterResponse{http.StatusInternalServerError, "cant create jwt token"}
+			message := "can't create token"
+			resp := LoginRegisterResponse{http.StatusInternalServerError, message}
 			Response(w, resp)
 			log.Fatalf("%s error: %v", op, err)
 		}
@@ -278,11 +329,15 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			Secure:   true,                    // Отправка только по HTTPS
 			SameSite: http.SameSiteStrictMode, // Защита от CSRF атак
 		})
-		resp := LoginRegisterResponse{http.StatusOK, "auth success"}
+		message := "auth success"
+		resp := LoginRegisterResponse{http.StatusOK, message}
+		log.Printf("%s, %s", r.URL, message)
 		Response(w, resp)
 		return
 	} else {
-		resp := LoginRegisterResponse{http.StatusMethodNotAllowed, "method not allowed"}
+		message := "method not allowed"
+		resp := LoginRegisterResponse{http.StatusMethodNotAllowed, message}
+		log.Printf("%s, %s", r.URL, message)
 		Response(w, resp)
 		return
 	}

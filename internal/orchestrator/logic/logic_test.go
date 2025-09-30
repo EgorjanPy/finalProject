@@ -109,8 +109,8 @@ func TestSaveResults(t *testing.T) {
 func TestPasswordHashing(t *testing.T) {
 	password := "securepassword123"
 
-	t.Run("Generate and Compare", func(t *testing.T) {
-		hash, err := Generate(password)
+	t.Run("GeneratePasswordHash and Compare", func(t *testing.T) {
+		hash, err := GeneratePasswordHash(password)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, hash)
 
@@ -119,7 +119,7 @@ func TestPasswordHashing(t *testing.T) {
 	})
 
 	t.Run("Compare wrong password", func(t *testing.T) {
-		hash, _ := Generate(password)
+		hash, _ := GeneratePasswordHash(password)
 		err := ComparePassword(hash, "wrongpassword")
 		assert.Error(t, err)
 	})
