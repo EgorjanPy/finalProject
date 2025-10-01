@@ -2,13 +2,15 @@ package agent
 
 import (
 	"context"
+	"finalProject/internal/config"
 	pb "finalProject/proto"
 	"fmt"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"sync"
 	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type Application struct {
@@ -18,10 +20,10 @@ type Application struct {
 	wg             sync.WaitGroup
 }
 
-func New(port string, computing_power int) *Application {
+func New() *Application {
 	return &Application{
-		Port:           port,
-		ComputingPower: computing_power,
+		Port:           config.Cfg.TCPPort,
+		ComputingPower: config.Cfg.ComputingPower,
 		stopChan:       make(chan struct{}),
 	}
 }
@@ -29,9 +31,7 @@ func New(port string, computing_power int) *Application {
 func (a *Application) StartAgent() {
 	defer a.wg.Done() // Уменьшаем счетчик WaitGroup при завершении
 
-	host := "localhost"
-	port := "5000"
-	addr := fmt.Sprintf("%s:%s", host, port)
+	addr := fmt.Sprintf("localhost%s", a.Port)
 
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {

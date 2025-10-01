@@ -3,7 +3,9 @@ package sqlite
 import (
 	"database/sql"
 	"errors"
+	"finalProject/internal/config"
 	"fmt"
+	"log"
 	"os"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -13,43 +15,41 @@ type Storage struct {
 	db *sql.DB
 }
 
-func New(storagePath string) (*Storage, error) {
+func New() (*Storage, error) {
 	const op = "storage.sqlite.New"
+	storagePath := config.Cfg.StoragePath
 	db, err := sql.Open("sqlite3", storagePath)
 	if err != nil {
-		fmt.Printf("cant open db, %v", err)
+		message := "database error: can't open db"
+		log.Printf("%s, %v", message, err)
 		os.Exit(1)
 	}
 	err = db.Ping()
 	if err != nil {
-		fmt.Printf("cant ping db, %v", err)
+		message := "can't ping db"
+		fmt.Printf("%s, %v", message, err)
 		os.Exit(1)
 	}
 	err = CreateTables(db)
 	if err != nil {
-		fmt.Printf("cant create tables, %v", err)
+		message := "database error: can't create tables"
+		fmt.Printf("%s, %v", message, err)
 		os.Exit(1)
 	}
 	return &Storage{db}, nil
 }
 func CreateTables(db *sql.DB) error {
 	const (
-		usersTable = `
-	CREATE TABLE IF NOT EXISTS users(
-		id INTEGER PRIMARY KEY AUTOINCREMENT, 
-		login TEXT NOT NULL UNIQUE,
-		password TEXT NOT NULL
-	);`
-
+		usersTable       = `CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT,login TEXT NOT NULL UNIQUE,password TEXT NOT NULL);`
 		expressionsTable = `
-	CREATE TABLE IF NOT EXISTS expressions(
-		id INTEGER PRIMARY KEY AUTOINCREMENT, 
-		expression TEXT NOT NULL,
-		user_id INTEGER NOT NULL,
-		answer TEXT,
-		status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'calculating', 'completed', 'failed')),
-		FOREIGN KEY (user_id)  REFERENCES user(id) ON DELETE CASCADE
-	);`
+		CREATE TABLE IF NOT EXISTS expressions(
+			id INTEGER PRIMARY KEY AUTOINCREMENT, 
+			expression TEXT NOT NULL,
+			user_id INTEGER NOT NULL,
+			answer TEXT,
+			status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'calculating', 'completed', 'failed')),
+			FOREIGN KEY (user_id)  REFERENCES user(id) ON DELETE CASCADE
+		);`
 	)
 	if _, err := db.Exec(usersTable); err != nil {
 		return err
@@ -85,15 +85,14 @@ func (s *Storage) UserExists(login string) (bool, error) {
 		if errors.Is(err, sql.ErrNoRows) {
 			return false, nil
 		}
-		return false, err
+		return exists, err
 	}
 
 	return exists, nil
 }
+
 func (s *Storage) AddUser(login, password string) (int64, error) {
-	var q = `
-	INSERT INTO users (login, password) values ($1, $2)
-	`
+	var q = `INSERT INTO users (login, password) values ($1, $2)`
 	result, err := s.db.Exec(q, login, password)
 	if err != nil {
 		return 0, err
@@ -102,14 +101,11 @@ func (s *Storage) AddUser(login, password string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-
 	return id, nil
 }
 
 func (s *Storage) AddExpression(expression *Expression) (int, error) {
-	var q = `
-	INSERT INTO expressions (expression, user_id) values ($1, $2)
-	`
+	var q = `INSERT INTO expressions (expression, user_id) values ($1, $2)`
 	result, err := s.db.Exec(q, expression.Expression, expression.UserID)
 	if err != nil {
 		return 0, err
@@ -118,13 +114,12 @@ func (s *Storage) AddExpression(expression *Expression) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-
 	return int(id), nil
 }
-func (s *Storage) GetExpressions(id int) ([]Expression, error) {
+func (s *Storage) GetExpressions(userID int) ([]Expression, error) {
 	var expressions []Expression
 	var q = `SELECT * FROM expressions WHERE user_id = $1`
-	rows, err := s.db.Query(q, id)
+	rows, err := s.db.Query(q, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -139,14 +134,14 @@ func (s *Storage) GetExpressions(id int) ([]Expression, error) {
 	}
 	return expressions, nil
 }
-func (s *Storage) GetExpressionById(ex_id int, user_id int) (Expression, error) {
+func (s *Storage) GetExpressionById(expressionID int, userID int) (Expression, error) {
 	var q = "SELECT * FROM expressions WHERE id = $1 AND user_id = $2"
-	ex := Expression{}
-	err := s.db.QueryRow(q, ex_id, user_id).Scan(&ex.ID, &ex.Expression, &ex.UserID, &ex.Answer, &ex.Status)
+	expression := Expression{}
+	err := s.db.QueryRow(q, expressionID, userID).Scan(&expression.ID, &expression.Expression, &expression.UserID, &expression.Answer, &expression.Status)
 	if err != nil {
 		return Expression{}, err
 	}
-	return ex, nil
+	return expression, nil
 }
 func (s *Storage) GetUncompletedExpressions() ([]Expression, error) {
 	expressions := []Expression{}
@@ -167,22 +162,9 @@ func (s *Storage) GetUncompletedExpressions() ([]Expression, error) {
 	return expressions, nil
 }
 
-func (s *Storage) UpdateUserPassword(id int64, pass string) error {
-	var q = "UPDATE users SET password = $1 WHERE id = $2"
-	_, err := s.db.Exec(q, pass, id)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-func (s *Storage) SetResult(id int, res string) error {
-	var q = `
-        UPDATE expressions 
-        SET answer = $1, 
-            status = 'completed'
-        WHERE id = $2
-    `
-	_, err := s.db.Exec(q, res, id)
+func (s *Storage) SetResult(expressionID int, res string) error {
+	var q = `UPDATE expressions SET answer = $1, status = 'completed' WHERE id = $2`
+	_, err := s.db.Exec(q, res, expressionID)
 	if err != nil {
 		return err
 	}

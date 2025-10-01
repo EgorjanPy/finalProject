@@ -242,7 +242,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		login := request.Login
 		password := request.Password
 
-		if ok, _ := storage.DataBase.UserExists(login); ok {
+		if ok, err := storage.DataBase.UserExists(login); ok || err != nil {
 			message := "user exists"
 			response := LoginRegisterResponse{StatusCode: http.StatusUnauthorized, Message: message}
 			log.Printf("%s, error: %s", r.URL, message)
@@ -280,7 +280,6 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		op := "handlers.LoginHandler"
-		//w.Header().Set("Content-Type", "application/json")
 		var request RegisterLoginRequest
 		err := json.NewDecoder(r.Body).Decode(&request)
 		if err != nil {
@@ -292,7 +291,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		login := request.Login
 		password := request.Password
-		if ok, _ := storage.DataBase.UserExists(login); !ok {
+		if ok, err := storage.DataBase.UserExists(login); !ok || err != nil {
 			message := "user not found"
 			resp := LoginRegisterResponse{http.StatusUnauthorized, message}
 			log.Printf("%s, %s", r.URL, message)

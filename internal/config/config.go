@@ -14,6 +14,7 @@ type Config struct {
 	TimeMulMs      time.Duration `yaml:"TIME_MULTIPLICATIONS_MS" env-default:"100ms"`
 	TimeDivMs      time.Duration `yaml:"TIME_DIVISIONS_MS" env-default:"100ms"`
 	Port           string        `yaml:"PORT" env-default:"8080"`
+	TCPPort        string        `yaml:"TCP_PORT" env-default:":5050"`
 	ComputingPower int           `yaml:"COMPUTING_POWER" env-default:"2"`
 	StoragePath    string        `yaml:"storage_path"`
 	Secret         string        `yaml:"jwt_secret"`

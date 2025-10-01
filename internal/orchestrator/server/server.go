@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"finalProject/internal/config"
 	"finalProject/internal/orchestrator/handlers"
 	"finalProject/internal/orchestrator/logic"
 	"finalProject/internal/orchestrator/middleware"
@@ -12,17 +13,24 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sync"
 
 	"github.com/gorilla/mux"
 	"google.golang.org/grpc"
 )
 
 type Application struct {
-	port string
+	port     string
+	tcpPort  string
+	stopChan chan struct{}
+	wg       sync.WaitGroup
 }
 
-func New(port string) *Application {
-	return &Application{port: port}
+func New() *Application {
+	return &Application{
+		port:     config.Cfg.Port,
+		tcpPort:  config.Cfg.TCPPort,
+		stopChan: make(chan struct{})}
 }
 
 type Server struct {
@@ -48,11 +56,11 @@ func (s *Server) SetTask(ctx context.Context, in *pb.SetTaskRequest) (*pb.SetTas
 	return &pb.SetTaskResponse{}, nil
 }
 
-func (a *Application) RunServer() (error, error) {
+func (a *Application) RunServer() {
 	host := "localhost"
-	port := "5000"
+	tcpPort := a.tcpPort
 
-	addr := fmt.Sprintf("%s:%s", host, port)
+	addr := fmt.Sprintf("%s%s", host, tcpPort)
 	lis, err := net.Listen("tcp", addr) // будем ждать запросы по этому адресу
 	if err != nil {
 		log.Println("error starting tcp listener: ", err)
@@ -62,11 +70,12 @@ func (a *Application) RunServer() (error, error) {
 	calcServiceServer := NewServer()
 	pb.RegisterCalcServiceServer(grpcServer, calcServiceServer)
 	go func() {
-		log.Println("прослушиватель tcp запущен на порту: ", port)
+		log.Println("слушатель tcp запущен на порту: ", tcpPort)
 		if err := grpcServer.Serve(lis); err != nil {
 			log.Fatalf("failed to serve gRPC: %v", err)
 		}
 	}()
+
 	r := mux.NewRouter()
 
 	// FRONTEND
@@ -85,23 +94,35 @@ func (a *Application) RunServer() (error, error) {
 	r.HandleFunc("/api/v1/login", middleware.LoggerMiddleware(handlers.LoginHandler))
 	http.Handle("/", r)
 
-	// Проверка есть ли нерешенные выражения в бд, если да, то решаем их
+	// Проверка есть ли нерешенные выражения в бд, если да, то добавляем их в очередь
 	expressions, err := storage.DataBase.GetUncompletedExpressions()
 	if err != nil {
-		log.Println("cant get uncompleted expressions from database")
+		log.Println("can't get uncompleted expressions from database")
 	} else {
-		for _, ex := range expressions {
-			logic.NewExpression(int(ex.ID), ex.Expression, ex.UserID)
-		}
+		go func() {
+			for _, ex := range expressions {
+				logic.NewExpression(int(ex.ID), ex.Expression, ex.UserID)
+			}
+		}()
+
 	}
 
 	go func() {
-		log.Printf("Сервер удачно запущен на http://localhost%s", a.port)
+		log.Printf("Сервер удачно запущен на %s%s", host, a.port)
 		if err := http.ListenAndServe(a.port, nil); err != nil {
 			log.Fatalf("failed to serve HTTP: %v", err)
 		}
 	}()
 
 	// Бесконечный цикл, чтобы main не завершился
-	select {}
+	select {
+	case <-a.stopChan: // Проверяем сигнал остановки
+		log.Println("Stopping server...")
+		return
+	}
+}
+func (a *Application) Stop() {
+	close(a.stopChan) // Посылаем сигнал остановки всем горутинам
+	a.wg.Wait()       // Ждем завершения всех горутин
+	log.Println("All agents stopped")
 }
