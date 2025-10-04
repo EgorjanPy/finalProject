@@ -13,17 +13,18 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"sync"
+	"time"
 
 	"github.com/gorilla/mux"
 	"google.golang.org/grpc"
 )
 
 type Application struct {
-	port     string
-	tcpPort  string
-	stopChan chan struct{}
-	wg       sync.WaitGroup
+	port       string
+	tcpPort    string
+	stopChan   chan struct{}
+	httpServer *http.Server
+	grpcServer *grpc.Server
 }
 
 func New() *Application {
@@ -56,7 +57,7 @@ func (s *Server) SetTask(ctx context.Context, in *pb.SetTaskRequest) (*pb.SetTas
 	return &pb.SetTaskResponse{}, nil
 }
 
-func (a *Application) RunServer() {
+func (a *Application) StartServer() {
 	host := "localhost"
 	tcpPort := a.tcpPort
 
@@ -66,14 +67,15 @@ func (a *Application) RunServer() {
 		log.Println("error starting tcp listener: ", err)
 		os.Exit(1)
 	}
-	grpcServer := grpc.NewServer()
+	a.grpcServer = grpc.NewServer()
 	calcServiceServer := NewServer()
-	pb.RegisterCalcServiceServer(grpcServer, calcServiceServer)
+	pb.RegisterCalcServiceServer(a.grpcServer, calcServiceServer)
 	go func() {
-		log.Println("слушатель tcp запущен на порту: ", tcpPort)
-		if err := grpcServer.Serve(lis); err != nil {
+		log.Println("gRPC сервер удачно запущен на", tcpPort)
+		if err := a.grpcServer.Serve(lis); err != nil {
 			log.Fatalf("failed to serve gRPC: %v", err)
 		}
+		log.Println("gRPC сервер остановлен")
 	}()
 
 	r := mux.NewRouter()
@@ -98,31 +100,40 @@ func (a *Application) RunServer() {
 	expressions, err := storage.DataBase.GetUncompletedExpressions()
 	if err != nil {
 		log.Println("can't get uncompleted expressions from database")
-	} else {
-		go func() {
-			for _, ex := range expressions {
-				logic.NewExpression(int(ex.ID), ex.Expression, ex.UserID)
-			}
-		}()
-
+		return
 	}
+	go func() {
+		for _, ex := range expressions {
+			logic.NewExpression(int(ex.ID), ex.Expression, ex.UserID)
+		}
 
+	}()
+	a.httpServer = &http.Server{
+		Addr:    a.port,
+		Handler: r,
+	}
 	go func() {
 		log.Printf("Сервер удачно запущен на %s%s", host, a.port)
 		if err := http.ListenAndServe(a.port, nil); err != nil {
 			log.Fatalf("failed to serve HTTP: %v", err)
 		}
+		log.Println("HTTP сервер остановлен")
 	}()
-
-	// Бесконечный цикл, чтобы main не завершился
-	select {
-	case <-a.stopChan: // Проверяем сигнал остановки
-		log.Println("Stopping server...")
-		return
-	}
 }
 func (a *Application) Stop() {
-	close(a.stopChan) // Посылаем сигнал остановки всем горутинам
-	a.wg.Wait()       // Ждем завершения всех горутин
-	log.Println("All agents stopped")
+	if a.grpcServer != nil {
+		a.grpcServer.GracefulStop()
+		log.Println("Остановка gRPC сервера...")
+	}
+	if a.httpServer != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := a.httpServer.Shutdown(ctx); err != nil {
+			log.Printf("HTTP server shutdown error: %v\n", err)
+		} else {
+			log.Println("HTTP server graceful shutdown completed")
+		}
+	}
+	log.Println("All servers stopped")
 }
