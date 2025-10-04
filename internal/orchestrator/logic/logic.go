@@ -73,7 +73,6 @@ func (sr *SaveResults) SetResult(id int, result float64) {
 		sr.Results[id] = result
 		return
 	}
-
 }
 func (sr *SaveResults) GetResult(id int) float64 {
 	sr.mu.RLock()
@@ -108,6 +107,7 @@ func NewExpression(id int, expression, userID string) {
 		fmt.Println()
 	}(id)
 }
+
 func ParseAndEvaluate(expression Expression) (float64, error) {
 	parser := NewParser(expression.Expression)
 	ast := parser.ParseExpression()
@@ -142,14 +142,10 @@ func (b *BinaryOp) Evaluate() float64 {
 		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "+", OperationTime: config.Cfg.TimeAddMs}
 		id := Tasks.GetLen()
 
-		// fmt.Println("len, id = ", id)
 		Tasks.AddTask(id, newTask)
-		// fmt.Println(Tasks.Tasks)
 		for {
 			if Results.IsExists(id) {
 				res = Results.GetResult(id)
-				// fmt.Printf("res = %f", res)
-				// fmt.Println()
 				break
 			} else {
 				time.Sleep(1 * time.Second)
@@ -161,13 +157,10 @@ func (b *BinaryOp) Evaluate() float64 {
 		var res float64
 		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "-", OperationTime: config.Cfg.TimeSubMs}
 		id := len(Tasks.Tasks)
-		// fmt.Println("len, id = ", id)
 		Tasks.AddTask(id, newTask)
-		// fmt.Println(Tasks.Tasks)
 		for {
 			if Results.IsExists(id) {
 				res = Results.GetResult(id)
-				// fmt.Printf("res = %f", res)
 				break
 			} else {
 				time.Sleep(1 * time.Second)
@@ -179,13 +172,10 @@ func (b *BinaryOp) Evaluate() float64 {
 		var res float64
 		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "*", OperationTime: config.Cfg.TimeMulMs}
 		id := len(Tasks.Tasks)
-		// fmt.Println("len, id = ", id)
 		Tasks.AddTask(id, newTask)
-		// fmt.Println(Tasks.Tasks)
 		for {
 			if Results.IsExists(id) {
 				res = Results.GetResult(id)
-				// fmt.Printf("res = %f", res)
 				break
 			} else {
 				time.Sleep(1 * time.Second)
@@ -197,13 +187,10 @@ func (b *BinaryOp) Evaluate() float64 {
 		var res float64
 		newTask := Task{Arg1: b.Left.Evaluate(), Arg2: b.Right.Evaluate(), Operation: "/", OperationTime: config.Cfg.TimeDivMs}
 		id := len(Tasks.Tasks)
-		// fmt.Println("len, id = ", id)
 		Tasks.AddTask(id, newTask)
-		// fmt.Println(Tasks.Tasks)
 		for {
 			if Results.IsExists(id) {
 				res = Results.GetResult(id)
-				// fmt.Printf("res = %f", res)
 				break
 			} else {
 				time.Sleep(1 * time.Second)

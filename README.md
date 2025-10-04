@@ -5,7 +5,7 @@
 P.S: для связи со мной, тг <a>https://t.me/bomboklyat</a>, если нашли ошибку или есть фитбек то пишите :)
 
 ## Архитектура
-![Иллюстрация к проекту](https://github.com/EgorjanPy/finalProject/blob/main/Screenshot_6.png)
+![Иллюстрация к проекту](https://github.com/EgorjanPy/finalProject/blob/main/Screenshot_7.png)
 
 
 Проект состоит из двух основных компонентов:
@@ -149,7 +149,7 @@ go mod tidy
 * Установите [mingw](https://jmeubank.github.io/tdm-gcc/)
 * Теперь нужно добавить путь к GCC в переменную окружения PATH 
 ```
-    set PATH=yourPath\mingw\bin;%PATH%
+set PATH=yourPath\mingw\bin;%PATH%
 ```
 
 ## Запуск
