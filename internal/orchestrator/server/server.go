@@ -106,6 +106,7 @@ func (a *Application) StartServer() {
 		for _, ex := range expressions {
 			logic.NewExpression(int(ex.ID), ex.Expression, ex.UserID)
 		}
+		return
 
 	}()
 	a.httpServer = &http.Server{
