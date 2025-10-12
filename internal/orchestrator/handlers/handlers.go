@@ -232,6 +232,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		var request RegisterLoginRequest
 		err := json.NewDecoder(r.Body).Decode(&request)
+		defer r.Body.Close()
 		if err != nil {
 			message := "bad request"
 			response := LoginRegisterResponse{StatusCode: http.StatusBadRequest, Message: message}
@@ -282,6 +283,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		op := "handlers.LoginHandler"
 		var request RegisterLoginRequest
 		err := json.NewDecoder(r.Body).Decode(&request)
+		defer r.Body.Close()
 		if err != nil {
 			message := "bad request"
 			response := LoginRegisterResponse{StatusCode: http.StatusBadRequest, Message: message}
